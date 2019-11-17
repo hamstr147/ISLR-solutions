@@ -1,0 +1,298 @@
+---
+title: "ISLR Chapter 3 - Linear Regressions"
+output: html_notebook
+---
+
+Some questions that linear regression can answer
+
+* Is there a relationship between our predictor and response variables?
+* If it exists, how strong is this relationship?
+* Which predictor contributes the most to the outcome?
+* Is the relationship linear?
+* Is there an interaction effect between our predictors?
+
+# Simple linear regression
+A single variable linear regression can be written as:
+$$Y \approx \beta_0 + \beta_1X$$
+Use ^ symbols to denote estimates:
+$$\hat{y} = \hat{\beta_0} + \hat{\beta_1}x$$
+To fit our model, we use the least square measure criterion. To do this, we consider 'residuals' which are the differences between our estimated and actual values. For the ith observation, the ith residual is:
+$$e_i = y_i - \hat{y_i}$$
+The residual sum of squares (RSS) is defined as:
+$$RSS = e_1^2 + e_2^2 + ... + e_n^2$$
+Minimising these terms with respect to the coefficient terms, the least squares coefficient estimates are:
+$$\beta_1 = \frac{\sum_{i=1}^{n}(x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n}(x_i - \bar{x})^2}$$
+$$\beta_0 = \bar{y} - \hat{\beta_1}\bar{x}$$
+
+## Assessing accuracy of coefficient estimates
+Suppose the true relationship can be represented by the following function:
+$$Y = f(X) + \epsilon$$
+Where $\epsilon$ is a mean-zero random error term. If the relationship is linear, we can write:
+$$Y = \beta_0 + \beta_1(X) + \epsilon$$
+This is the population linear regression line. If we fit lots of models based on random samples of our population, on average they would approximate this relationship. This is the same as saying it is an unbiased estimator. 
+
+To measure how far the estimate for each parameter is from the true value, we use standard errors:
+$$SE(\hat{\beta_0})^2 = \sigma^2[\frac{1}{n} + \frac{\bar{x}^2}{\sum_{i=1}^{n}(x_i-\bar{x})^2}])$$
+$$SE(\hat{\beta_1})^2 = \frac{\sigma^2}{\sum_{i=1}^{n}(x_i-\bar{x})^2}$$
+Where $\sigma^2 = Var(\epsilon)$. We must assume that errors $\epsilon$ are uncorrelated with common variance $\sigma^2$. Even if this is clearly not true, it is often a good enough approximation. Note that for $SE(\beta_1)$ the more spread out the observations $x_i$ are, the smaller the standard error. We can also see that if $\bar{x}$ is zero, then this is just the same as the SE for the mean. 
+
+$\sigma^2$ is not generally known, so we estimate it using the residual standard error (RSE):
+$$RSE = \sqrt{RSS/(n-2)}$$
+Standard errors can be used to compute confidence intervals. The 95% confidence interval is defined as the range of values such that with 95% probability, the range will contain the true unknown value of the parameter. 
+
+For linear regression, the 95% confidence for $\beta_1$ is approximately:
+$$\hat{\beta_1} \pm 2\cdot{SE(\hat{\beta_1})}$$
+
+The confidence interval for $\beta_0$ can be calculated in the same way.
+
+Standard errors can also be used to perform hypothesis tests. To test the null hypothesis $H_0$ (i.e. $\beta_1$ is zero), we compute the t-statistic:
+$$t = \frac{\hat{\beta_1} - 0}{SE(\hat{\beta)}_1}$$
+This measures the number of standard deviations that the coefficient is away from zero. If there is no true relationship, then t will have a t-distribution with n - 2 degrees of freedom. 
+
+T-distributions approximate the normal where n is greater than about 30. Hence, we can simply calculate the probability of a value of $\mid{t}\mid$ or larger, assuming $H_0$ - this is a p-value. If small, it's unlikely that the relationship is due to chance. 
+
+## Assessing model accuracy
+We use the RSE and $R^2$ to assess model accuracy. 
+
+The RSE is an esimate of the standard deviation of $\epsilon$ and was defined earlier. It effectively gives you a measure of prediction error in the units of the outcome variable. It is a measure of lack of fit - so the smaller it is the better. 
+
+$R^2$ gives a measure of fit between 0 and 1. It is the proportion of the total sum of squares (TSS) explained by the mode, i.e., the proportion of variance explained. 
+$$R^2 = \frac{TSS - RSS}{TSS} = 1 - \frac{RSS}{TSS}$$
+$R^2$ is just the correlation squared for a simple linear regression, where correlation is given by
+$$Cor(X,Y) = \frac{\sum_{i=1}^n(x_i-\bar{x})(y_i-\bar{y})}{\sqrt{\sum_{i=1}^n(x_i-\bar{x})^2}\sqrt{\sum_{i=1}^n(y_i-\bar{y})^2}}$$
+As correlation quantifies the relationship for two variables, in multiple linear regression, we use $R^2$ as the measure of the linear relationship.
+
+# Multiple linear regression
+We can extend the above to cases with multiple predictors by fitting a model of the form:
+$$Y = \beta_0 + \beta_1X_1 + \beta_2X_2+ ... + \beta_pX_p + \epsilon$$
+We estimate the coefficients in the same way, minimising the sum of squared residuals. 
+
+## 4 interesting questions with multiple linear regression
+
+### Is there a link between the response and predictors?
+We test this hypothesis using the F-statistic
+$$F = \frac{(TSS - RSS)/p}{RSS/(n-p-1)}$$
+If the linear model assumptions are correct, one can show that:
+$$E\{RSS/(n-p-1)\} = \sigma^2$$
+and that, if $H_0$ is true (i.e. there is no link between the predictors and response):
+$$E\{(TSS-RSS)/p\}=\sigma^2$$
+So if the null hypothesis is true, F should be close to 1. If it isn't, it should be greater than one. If n is small, then it must be a lot greater than 1. If n is large, then it doesn't need to be much bigger. If the errors are normally distributed the null hypothesis is true, then F follows an F-distribution, which means we can calculate p-values for F. 
+
+We can also calculate F for a subset of predictors, q:
+$$F = \frac{(RSS_0 - RSS)/q}{RSS/(n-p-1)}$$
+where $RSS_0$ is the RSS for a second model that omits q. The t-statistic and p-values for individual predictors in regression outputs are just this F-statistic calculate for a q of that specific predictor - i.e. the partial effect of adding that predictor to the model. 
+
+### Which predictors are important?
+We could do variable selection by fitting all possible models (from no predictors to all of them and all other combinations). We could then use something like adjusted $R^2$ to choose between them. But if p is large, then we can't possibly fit all these models. 
+
+Three classical approaches to this problem:
+
+* Forward selection - start with a model with no predictors (i.e just an intercept). Fit p single variable models. Go with the one with the lowest RSS. Then fit p - 1 models with the selected variable and intercept for each remaining predictor. Go with the one with the lowest RSS. Repeat until a stopping criterion is reached. 
+* Backward selection - start with all predictors in the model. Remove the one with the highest p-value. Repeat until a stopping criterion is reached. 
+* Mixed selection - we could combine the above, for instance by doing forward selection but removing predictors if their p-values exceed a certain threshold, and repeat until all variables in the model have a sufficiently low p-value. 
+
+Note that if n < p, then you can't do backward selection, but you can do forward. Forward selection is greedy so might include predictors that are redundant - we can use mixed selection to remedy this. 
+
+## How well does the model fit the data?
+
+It turns out that $R^2$ in multiple linear regression equals $Cor(Y, \hat{Y})^2$ - i.e. the square of the correlation between the response and predicted response. Multiple linear regression maximises this correlation. 
+
+Note that $R^2$ will always increase with new variables added, even if they are not useful or significant. A very small increase in $R^2$ may indicate that a predictor shouldn't be in the model. 
+
+RSE is defined as
+$$RSE = \sqrt{\frac{1}{n-p-1} RSS}$$
+Note that the preious definition is simplified for the simple linear regression case.
+
+You can see that if p increases, then even if RSS decreases (implying a better fit), then RSE can still decrease if that predictor adds very little additional information to the model. 
+
+In general, also think about plotting your data, as this might indicate problems that are not obvious from numerical measures (e.g. non-normal errors). 
+
+## How accurate will our predictions be?
+
+We need to remember that our model gives estimates of coefficients, not the population coefficients themselves. 
+
+We also have model bias - assuming that the relatioship is actually linear when it might not be. We are estimating the best linear approximation, not the best in general. 
+
+Finally, we also have irreducible error. To take this into account we can use prediction intervals. These are wider than confidence intervals as they take into account both the reducible error on our esimates and irreducible error when making a prediction for a particular observation. 
+
+# Qualitative predictors
+
+If we have a qualitative (factor) variable, we have a choice about encoding. Suppose we regress credit card debt on gender of customers, where there are two genders present in our data, male and female. If we encode male as 0 and female as 1, then we get the following:
+
+$$y_i = \beta_0 + \beta_1x_i$$ if female, and 
+$$y_i = \beta_0$$ if male. 
+
+Essentially this means, the intercept is the average male credit card balance, and the coefficient the difference between female and male averages. If we had coded the other way round, with female at 0 and male at 1, then the intercept would be the average female balance and the coefficient the difference between male and female averages. The predictions would be the same but the interpretation of hte model would be different. If we coded male as 1 and female as -1, then the intercept could be interpreted as the overall average, and the coefficient the difference either side of this for each gender, i.e.
+$$y_i = \beta_0 + \beta_1x_1$$ if male, and 
+$$y_i = \beta_0 - \beta_1x_1$$ if female. 
+
+If we have more than 2 categories, then we can have multiple dummy categories. Suppose we want to regress credit card balances on ethnicity, where we have three ethnicities - white, black and Asian. Then we could make the black category the baseline, and have two dummy variables, one for white (1) and non-white (0) and one for Asian (1) and non-Asian (0). In this case the intercept would be the average credit card balance for black people in the sample, the coefficient on the white dummy the difference between the black and white balance, and the coefficient on the Asian dummy the difference between Asian and black. Note that p-values might be affected by coding so it is generally best to perform an F-test on the dummy variables to test for significance. 
+
+## Extending the linear model
+
+### Removing the additive assumption
+
+We can include interaction terms in the model to take into account interaction effects. A standard regression might look like this:
+$$Y = \beta_0 + \beta_1X_1 + \beta_2X_2 + \epsilon$$
+With an interaction between the two variables, we have:
+$$Y = \beta_0 + \beta_1X_1 + \beta_2X_2 + \beta_3X_1X_2 + \epsilon$$
+Which can be written as: $Y = \beta_0 + \tilde{\beta_1}X_1 + \beta_2X_2 +\epsilon$, 
+where $\tilde{\beta_1} = \beta_1 + \beta_3X_2$. We can see therefore that changing $X_2$ affects the coefficient of $X_1$, and hence its impact on $Y$. 
+
+### Non-linear relationships
+We can fit linear regressions with transformations of predictors (e.g. including a squared term if a quadratic-type fit would perform better).
+
+## Some problems
+
+### Non-linearity
+If the true relationship is far from linear, then a linear model won't perform well. You can inspect residual plots (fitted values vs residuals) for non-linearity. 
+
+### Correlated error terms
+Linear regression relies on error terms being uncorrelated. This means that an error $\epsilon_i$ cannot tell us anything about $\epsilon_{i+1}$. Correlated errors will understate p-values and narrow confidence intervals. This most commonly arises in time-series data but can also arise in other contexts (e.g. a study of heights against weights where our sample contains individuals from the same family). 
+
+As an example, consider a case where you accidentally duplicate your data so you have twice as many observations. You will get the same parameter estimates but your confidence intervals will be narrower by a factor of $\sqrt{2}$. 
+
+### Non-constant variance of error terms
+Assumption that variance is constant in error terms is an important assumption for regression. Inspecting a residual plot might indicate heteroskedasticity (i.e. non-constant variance) where it takes a funnel shape. You can solve this by using transformations like taking logs or square roots. 
+
+If we have a good idea of the variance of each response (e.g. if the ith response is an average of n raw observations), we can use weighted linear regression to solve this issue.
+
+### Outliers
+Outliers are unusual values in the response given the predictors. Even if outliers don't seem to change the regression coefficients very much, they can have a significant impact on RSE, which is used to calculate all confidence intervals. Inspect residual plots for evidence of outliers, or plot studentised residuals (residuals over estimated SE) - stuentised residuals above 3 (in absolute terms) may indicate outliers. 
+
+### High leverage points
+Outliers are unusual values for the response variable. Unusual values for predictors may be points of high leverage. It is easy to identify these in a simple regression as we can just check if the data point is well outside the range of the rest of the points. It gets harder in multiple regression though, as the combination of the predictors might be unusual but the values for each predictor may not be. 
+
+We can calculate the leverage statistic for simple linear regression:
+$$h_i = \frac{1}{n} + \frac{(x_i-\bar{x})^2}{\sum_{i'=1}^n(x_{i'}-\bar{x})^2}$$
+There is a similar formula that generalises to the multiple case. The leverage statistic is always between 1/n and 1, and the average is always (p + n)/n. If an observation is close to 1/n, it has low leverage, and if it is well above the average, it has high leverage. 
+
+### Collinearity
+This arises where your predictors are highly correlated with one another. If your predictors tend to rise and fall with one another, it becomes harder to figure out which has an effect on the response. This results in higher estimated standard errors and hence lower t-statistics, meaning you are unlikely to reject the null hypothesis - collinearity reduces the power of hypothesis tests.
+
+While you could look at the correlation matrix to see if any pairs of variables have high correlations, multicollinearity (where collinearity exists between more than 2 predictors) can be hard to detect. Instead, we can use the variance inflation factor or VIF:
+$$VIF(\hat{\beta}_j) = \frac{1}{1 - R^2_{X_j|X_-j}}$$
+where $R^2_{X_j|X_-j}$ is the $R^2$ from a regression of $X_j$ on other predictors. If this is close to 0, then VIF is close to 1, while if it is close to 1, then VIF tends to infinity. A high VIF indicates the presense of possible multicollinearity. 
+
+In response, you can either remove highly correlated variables (as the information in the correlated variables is already present in the variable they are correlated with), or you could construct a new feature from the correlated predictors. 
+
+# Lab
+Call ISLR and MASS libraries. 
+```{r}
+library(ISLR)
+library(MASS)
+```
+### Simple linear regression
+We will use the Boston dataset to predict median house value using percent of households with low socioeconomic status. 
+```{r}
+names(Boston)
+lm.fit <- lm(medv ~ lstat, data = Boston)
+lm.fit
+summary(lm.fit)
+```
+Use `names()` to find out what is in the lm.fit object. You can use the $ syntax to extract information from the model, but it is often safer to use specific functions like `coef()`.
+```{r}
+names(lm.fit)
+coef(lm.fit)
+```
+Use `confint()` to get confidence intervals, and `predict()` to get confidence and prediction intervals and predictions. 
+```{r}
+confint(lm.fit)
+predict(lm.fit, data.frame(lstat = c(5,10,15)), interval = "confidence")
+predict(lm.fit, data.frame(lstat = c(5,10,15)), interval = "prediction")
+```
+We can see the regression line using the `plot()` and `abline()` functions. We can actually fit any line with `abline()` by specifying intercept and slope as its arguments. 
+```{r}
+plot(Boston$lstat, Boston$medv)
+abline(lm.fit)
+abline(lm.fit, lwd = 3)
+abline(lm.fit, lwd = 3, col = "red")
+plot(Boston$lstat, Boston$medv, col="red")
+plot(Boston$lstat, Boston$medv, pch=20)
+plot(Boston$lstat, Boston$medv, pch="+")
+plot(1:20,1:20,pch=1:20)
+```
+Call `plot()` on a model to get diagnostic plots. Use `par()` to display them all at once. 
+```{r}
+par(mfrow = c(2,2))
+plot(lm.fit)
+```
+We can also use the `residuals()` or `rstudent()` functions. 
+```{r}
+plot(predict(lm.fit), residuals(lm.fit))
+plot(predict(lm.fit), rstudent(lm.fit))
+```
+Use `hatvalues()` to calculate leverage and `which.max()` to get the index of the point with the highest leverage. 
+```{r}
+plot(hatvalues (lm.fit))
+which.max(hatvalues(lm.fit))
+```
+### Multiple linear regression
+```{r}
+lm.fit <- lm(medv ~ lstat + age, data = Boston)
+summary(lm.fit)
+```
+Use '.' as a shorthand for all predictors:
+```{r}
+lm.fit <- lm(medv ~ ., data = Boston)
+summary(lm.fit)
+```
+You can access the components of the model summary by name using the '$' syntax:
+```{r}
+summary(lm.fit)$r.sq
+summary(lm.fit)$sigma
+```
+Use `vif()` from the `car` package to get the variance inflation factors. 
+```{r}
+car::vif(lm.fit)
+```
+If you want to omit a variable, you can do this:
+```{r}
+lm.fit1 <- lm(medv ~ . - age, data = Boston)
+```
+and to update a model, do this:
+```{r}
+lm.fit1 <- update(lm.fit, ~ . - age)
+```
+### Interaction terms
+Use '*' to get a model with interaction terms (this automatically includes its component predictors):
+```{r}
+summary(lm(medv ~ lstat * age, data = Boston))
+```
+### Non-linear transformations
+To add a quadratic term, use `I(X^2)`.
+```{r}
+lm.fit2 <- lm(medv ~ lstat + I(lstat^2), data = Boston)
+summary(lm.fit2)
+```
+The p-value for the squared term looks like it indicates this model is improved versus one without it. Use `anova()` to quantify this improvement:
+```{r}
+lm.fit <- lm(medv ~ lstat, data = Boston)
+anova(lm.fit, lm.fit2)
+```
+This performs a hypothesis test with the null being there is no siginificant difference between the two models. It is clear from the high F-statistic and low p-value that the squared term model is better. 
+
+We can also see that with the squared term, there isn't a concern with non-linearity judging form residual plots:
+```{r}
+par(mfrow = c(2,2))
+plot(lm.fit2)
+```
+You can use `poly()` for higher order polynomials:
+```{r}
+lm.fit5 <- lm(medv ~ poly(lstat, 5), data = Boston)
+```
+And you can do other transformations, e.g logarithmic:
+```{r}
+summary(lm(medv ~ log(rm), data = Boston))
+```
+### Qualitative predictors
+Illustrating qualitative predictors using the Carseats data from the ISLR package:
+```{r}
+names(Carseats)
+lm.fit <- lm(Sales ~ . + Income:Advertising + Price:Age, data = Carseats)
+summary(lm.fit)
+```
+To find the coding of the dummy variables, use `contrasts()`:
+```{r}
+contrasts(Carseats$ShelveLoc)
+```
