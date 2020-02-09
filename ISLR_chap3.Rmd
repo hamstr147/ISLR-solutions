@@ -1,6 +1,6 @@
 ---
 title: "ISLR Chapter 3 exercises"
-output: html_notebook
+output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -13,8 +13,11 @@ The null hypotheses to which the
 # Exercise 4
 
 We would expect the training RSS to be lower in the model with the cubic term than that with the single predictor even if the actual relationship is linear. Simply adding extra variables will result in a lower training RSS as the model would overfit the training data. 
+
 In contrast, the test RSS will be lower for the single predictor model because this more closely fits the actual relationship - the increased bias in the simple linear regression would be more than offset by the decrease in variance. 
+
 If the actual relationship is non-linear, we would expect the training RSS of the cubic term to be less than the training RSS of the simple model, regardless of how non-linear it is for the same reason outlined above. 
+
 However, for the test RSS we do not have enough information to say either way, as if the relationship is only slightly non-linear, the linear model may be a good approximation of the true function. The result due to the bias-variance trade off here is uncertain.
 
 # Exercise 5
@@ -156,23 +159,30 @@ lm(y ~ x + 0)
 # Exercise 13
 
 Create a feature X using the `rnorm(100)` command. 
+
 ```{r}
 set.seed(1)
 x <- rnorm(100)
 ```
+
 Create a vector `eps` from a normal distribution with mean zero and standard deviation of 0.25.
+
 ```{r}
 eps <- rnorm(100, 0, 0.25)
 ```
+
 Now generate a vector `y` according to the model $Y = -1 + 0.5X + \epsilon$
 ```{r}
 y <- -1 + 0.5*x + eps
 length(y)
 ```
+
 `y` is of length 100. In the model, $\beta_0$ is -1 and $\beta_1$ is 0.5.
+
 ```{r}
 plot(x,y)
 ```
+
 The scatterplot shows a cluster of values for x around 0, the mean, with more sparse points going up to 3 and -3, in line with the parameters set when the vector was created. y takes on values between -2.5 and 0.5, with the majority of points around -1 coinciding with x at zero. The relationship between the two appears linear with a slope of approximately 0.5 (the range of x is about 6 - between 3 and -3 - and the range of y is about 3 - between -2.5 and 0.5). These findings are consistent with the linear model used to generate y. 
 
 Fitting a linear model: 
@@ -180,13 +190,16 @@ Fitting a linear model:
 lm.fit <- lm(y ~ x)
 summary(lm.fit)
 ```
+
 The intercept of -1.00942 and coefficient of 0.49973 are quite close to the model used to generate the data. The intercept is within one estimated standard error of the true value, and the coefficient is within just over one SE of the true value. This is reflected in the extremely small p-values.
+
 ```{r}
 plot(x,y)
 abline(lm.fit, col = "blue")
 abline( -1, 0.5, col= "red")
 legend(x = "bottomright", legend = c("model", "true"), lwd = 3, col = c("blue", "red"))
 ```
+
 What happens if we add a quadratic term to the model?
 ```{r}
 lm.fit2 <- lm(y ~ x + I(x^2))

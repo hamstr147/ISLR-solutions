@@ -1,16 +1,23 @@
 ---
 title: "ISLR Chapter 2 exercises"
-output:
-  html_document:
-    df_print: paged
+output: md_document
 ---
-#Exercise 1
-a) If the sample size n is extremely large, and the number of predictors p is small, a flexible model would outperform an inflexible model as the risk of overfitting with a small number of predictors relative to observations is small. 
-b) If the number of predictors p is extremely large, and the number of observations n is small, an inflexible model would perform better than an inflexible model as a flexible model is likely to overfit the data. 
-c) If the relationship between the predictors and response is highly non-linear, a flexible model would outperform an inflexible model given a flexible model's lower bias.
-d) If the variance of the error terms, i.e. $\sigma^2= Var(\epsilon)$, is extremely high, an inflexible model would outperform a flexible model.
+# Exercise 1
 
-#Exercise 2
+*For each part 1 through 4, indicate whether we would generally expect the performance of a flexible statistical learning method to be better or worse than an inflexible method. Justify your answer.*
+
+1) *The sample size* n *is extremely large, and the number of predictors* p *is small.* 
+A flexible model would outperform an inflexible model as the risk of overfitting with a small number of predictors relative to observations is small. 
+
+2) *The number of predictors* p *is extremely large, and the number of observations* n *is small.* An inflexible model would perform better than an inflexible model as a flexible model is likely to overfit the data. 
+
+3) *The relationship between the predictors and response is highly non-linear.* 
+A flexible model would outperform an inflexible model given a flexible model's lower bias.
+
+4) *The variance of the error terms, i.e.* $\sigma^2= Var(\epsilon)$*, is extremely high.* 
+An inflexible model would outperform a flexible model.
+
+# Exercise 2
 a) We collect a set of data on the top 500 firms in the US. For each firm we record profit, number of employees, industry and the CEO salary. We are interested in understanding which factors affect CEO salary.
 
 We are interested in inference, this is a regression problem, and n = 500 and p = 3.
@@ -127,7 +134,7 @@ plot(college$Private, college$perc.alumni)
 Load in the Auto data set:
 
 ```{r}
-auto <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/Auto.csv", header = TRUE, na.strings = "?")
+auto <- read.csv("http://faculty.marshall.usc.edu/gareth-james/ISL/Auto.csv", header = TRUE, na.strings = "?")
 auto <- na.omit(auto)
 ```
 
@@ -141,11 +148,11 @@ We can quickly check the spread and average of each variable by inspecting the r
 
 ```{r}
 print("Range")
-sapply(auto[1:7], range)
+sapply(auto[, 1:7], range)
 print("Mean")
-sapply(auto[1:7], mean)
+sapply(auto[, 1:7], mean)
 print("Standard deviation")
-sapply(auto[1:7], sd)
+sapply(auto[, 1:7], sd)
 ```
 
 Take a subset of the data by removing the 10th to 85th observations and inspect the ranges, means and standard deviations of each variable:

@@ -1,6 +1,6 @@
 ---
 title: "ISLR Chapter 3 - Linear Regressions"
-output: html_notebook
+output: html_document
 ---
 
 Some questions that linear regression can answer

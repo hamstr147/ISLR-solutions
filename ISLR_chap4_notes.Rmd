@@ -1,6 +1,6 @@
 ---
 title: "ISLR Chapter 4 - Classification"
-output: html_notebook
+output: html_document
 ---
 
 Classification problems are where we have a categorical response. Linear regression is often not suitable for these sort of problems because:
