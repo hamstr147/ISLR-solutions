@@ -42,6 +42,7 @@ KNN applied to regression takes the *K* nearest neighbours and take the mean ave
 **iv.  For a fixed value of IQ and GPA, females earn more on average than males provided that the GPA is high enough.**
 
 The model described is:
+
 $$
 Y = 50 + 20X_1 + 0.07X_2 + 35X_3 + 0.01X_1X_2 - 10X_1X_3
 $$
@@ -80,7 +81,7 @@ If the actual relationship is non-linear, we would expect the training RSS of th
 
 For the test RSS we do not have enough information to say either way because if the relationship is only slightly non-linear, the linear model may be a good approximation of the true function. It isn't clear whether the higher variance of the cubic model or greater bias of the linear model would result in higher test RSS without further information.
 
-# Exercise 5
+## Exercise 5
 
 **Consider the fitted values that result from performing linear regression without an intercept. In this setting, the** ***i*****th fitted value takes the form:**
 
@@ -118,12 +119,14 @@ $$
 \hat{y}_i = \sum_{i'=1}^na_{i'}y_{i'}
 $$
 
-# Exercise 6
+## Exercise 6
 **Using (3.4), argue that in the case of simple linear regression, the least squares line always passes through the point** ***($\bar{x}, \bar{y}$)*****.**
 
 The intercept in the simple linear regression case is:
+
 $$\hat{\beta_0} = \bar{y} - \hat{\beta_1}\bar{x}$$
 The regression line can be written as:
+
 $$\hat{y} = \hat{\beta_0} + \hat{\beta_1}x$$
 
 As a simple regression is linear, there must be a point on the regression line that passes through $\bar{x}$. Substituting for $\beta_0$ we can see that where $x = \bar{x}$ we have the following:
@@ -134,7 +137,7 @@ $$
 
 Hence, where the regression line passes through $\bar{x}$, it must at this point also pass through $\bar{y}$, and hence the regression line must pass through $(\bar{x},\bar{y})$.
 
-# Exercise 7
+## Exercise 7
 **It is claimed in the text that in the case of simple linear regression of** ***Y*** **onto** ***X*****, the $R^2$ statistic is equal to the square of the correlation bewteen** ***X*** **and** ***Y*****. Prove that this is the case. For simplicity, you may assume that $\bar{x} = \bar{y} = 0$.**
 
 $R^2$ is defined as:
@@ -154,6 +157,7 @@ $$= \sum_{i=1}^n{y_i^2}-2\beta_1^2\sum_{i=1}^nx_i^2+\beta_1^2\sum_{i=1}^nx_i^2$$
 $$= \sum_{i=1}^n{y_i^2}-\beta_1^2\sum_{i=1}^nx_i^2$$
 
 Correlation between X and Y is defined as follows:
+
 $$
 Cor(X,Y) = \frac{\sum_{i=1}^nx_iy_i}{\sqrt{\sum_{i=1}^nx_i^2}\sqrt{\sum_{i=1}^ny_i^2}}
 $$
@@ -168,7 +172,7 @@ $$= 1 - \frac{\sum_{i=1}^ny_i^2 - \beta_1^2\sum_{i=1}^nx_i^2}{\sum_{i=1}^ny_i^2}
 $$= 1 - \frac{RSS}{TSS}$$
 $$= R^2$$
 
-# Exercise 8
+## Exercise 8
 
 Use the `lm()` function to perform a simple linear regression with `mpg` as the response and `horsepower` as the predictor: 
 
@@ -200,9 +204,7 @@ Plotting the response and predictor, with the regression line:
 plot(auto$mpg, auto$horsepower)
 abline(lm(auto$horsepower ~ auto$mpg))
 ```
-
 Plotting diagnostics:
-
 ```{r}
 par(mfrow = c(2,2))
 plot(fit)
@@ -210,7 +212,7 @@ plot(fit)
 
 The residuals vs fitted plot suggests a non-linear relationship in the data. This could be addressed by transforming the predictors. There are a few points, notably observations 117 and 94, that have high leverage and hence have a significant influence on the regression line. There do not appear to be any outliers in the data. 
 
-# Exercise 9
+## Exercise 9
 
 First, produce pairwise scatter plots:
 ```{r}
@@ -258,7 +260,7 @@ plot(fit3)
 
 There is still evidence of non-linearity in the residuals vs fitted plot as well as evidence of heteroskedasticity. Furthermore, there is some evidence of non-normality in residuals judging from the Q-Q plot. It appears that the variable selection and transformations applied should be reconsidered. 
 
-# Exercise 10
+## Exercise 10
 
 Fit a model using the `Carseats` data, predicting `Sales` using `Price`, `Urban` and `US`:
 ```{r}
@@ -274,7 +276,9 @@ According to the model:
 
 The model can be written as follows (assuming `Urban` is coded as 1 for an urban location and 0 otherwise, and `US` is coded 1 for 'Yes' and 0 for 'No'):
 
-$$Carseats = 13.043469 - 0.054459*Price - 0.021916*Urban - 1.200573*US$$
+$$
+Carseats=13.043469-0.054459*Price-0.021916*Urban-1.200573*US
+$$
 
 Using the p-values and assuming we are looking for coefficients that are significant at a 95% confidence level, we can reject the null hypothesis for `Price` and `US`. Using just these predictors in a new model:
 
@@ -291,7 +295,7 @@ plot(fit2)
 
 There is evidence that there are several points with high leverage in the second model and, judging from the residual plots, no points appear to be outliers.
 
-# Exercise 11
+## Exercise 11
 
 Generate a predictor and response:
 
@@ -323,10 +327,10 @@ $$SE(\hat{\beta}) = \sqrt{\frac{\sum_{i=1}^n(y_i-x_i\hat{\beta})^2}{(n-1)\sum_{i
 We can show that the t-statistic can be written as follows:
 
 $$(\frac{\hat{\beta}}{SE(\hat{\beta})})^2=\frac{(\sum_{i=1}^n{x_iy_i})^2}{(\sum_{i=1}^n{x_i^2})^2}\cdot{\frac{(n-1)\sum_{i'=1}^nx_{i'}^2}{\sum_{i=1}^n(y_i-x_i\hat{\beta})^2}}$$
-$$=\frac{(\sum_{i=1}^n{x_iy_i})^2}{(\sum_{i=1}^n{x_i^2})^2}\cdot{\frac{(n-1)\sum_{i'=1}^nx_{i'}^2}{\sum_{i=1}^n{y_i^2} - \beta^2\sum_{i=1}^nx_i^2}}$$
-$$=\frac{(\sum_{i=1}^n{x_iy_i})^2}{(\sum_{i=1}^n{x_i^2})^2}\cdot{\frac{(n-1)\sum_{i'=1}^nx_{i'}^2}{\sum_{i=1}^n{y_i^2} - (\sum_{i=1}^nx_iy_i)^2/\sum_{i=1}^nx_i^2}}$$
-$$={\frac{(\sum_{i=1}^n{x_iy_i})^2(n-1)}{\sum_{i=1}^n{y_i^2}\sum_{i=1}^nx_i^2 - (\sum_{i=1}^nx_iy_i)^2}}$$
-$$\frac{\hat{\beta}}{SE(\hat{\beta})} = \frac{(\sqrt{n-1})\sum_{i=1}^nx_iy_i}{\sqrt{\sum_{i=1}^n{y_i^2}\sum_{i=1}^nx_i^2 - (\sum_{i=1}^nx_iy_i)^2}}$$
+$$=\frac{(\sum_{i=1}^n{x_iy_i})^2}{(\sum_{i=1}^n{x_i^2})^2}\cdot{\frac{(n-1)\sum_{i'=1}^nx_{i'}^2}{\sum_{i=1}^n{y_i^2}-\beta^2\sum_{i=1}^nx_i^2}}$$
+$$=\frac{(\sum_{i=1}^n{x_iy_i})^2}{(\sum_{i=1}^n{x_i^2})^2}\cdot{\frac{(n-1)\sum_{i'=1}^nx_{i'}^2}{\sum_{i=1}^n{y_i^2}-(\sum_{i=1}^nx_iy_i)^2/\sum_{i=1}^nx_i^2}}$$
+$$={\frac{(\sum_{i=1}^n{x_iy_i})^2(n-1)}{\sum_{i=1}^n{y_i^2}\sum_{i=1}^nx_i^2-(\sum_{i=1}^nx_iy_i)^2}}$$
+$$\frac{\hat{\beta}}{SE(\hat{\beta})}=\frac{(\sqrt{n-1})\sum_{i=1}^nx_iy_i}{\sqrt{\sum_{i=1}^n{y_i^2}\sum_{i=1}^nx_i^2-(\sum_{i=1}^nx_iy_i)^2}}$$
 
 We can confirm this result numerically:
 ```{r}
@@ -342,7 +346,7 @@ summary(lm(y~x))
 summary(lm(x~y))
 ```
 
-# Exercise 12
+## Exercise 12
 
 When performing a linear regression without an intercept, the coefficient when regressing x on y and y on x will be the same where the sum of the squared values in x is the same as the sum of the squared values in y. 
 
@@ -363,7 +367,7 @@ lm(x ~ y + 0)
 lm(y ~ x + 0)
 ```
 
-# Exercise 13
+## Exercise 13
 
 Create a feature X using the `rnorm(100)` command. 
 
@@ -448,7 +452,7 @@ confint(lm.fit3)
 confint(lm.fit4)
 ```
 
-# Exercise 14
+## Exercise 14
 
 Setting up some feature vectors:
 ```{r}
@@ -459,6 +463,7 @@ y <- 2 + 2*x1 + 0.3*x2 + rnorm(100)
 ```
 
 `y` is the following linear model:
+
 $$Y = 2 + 2X_1 + 0.3X_2 + \epsilon$$
 2 and 0.3 are the coefficients. 
 
@@ -545,7 +550,7 @@ plot(lm.fit6)
 
 Similarly to the first new model, the new observation is not an outlier but appears to have high leverage. 
 
-# Exercise 15
+## Exercise 15
 
 First, run linear regressions for each predictor with `crim` (per capita crime) as the response.
 
