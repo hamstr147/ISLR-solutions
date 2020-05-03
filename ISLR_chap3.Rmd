@@ -1,8 +1,6 @@
 ---
 title: "ISLR Chapter 3 solutions"
-output: 
-  github_document:
-    pandoc_args: --webtex
+output: html_document
 ---
 
 ```{r setup, include=FALSE}

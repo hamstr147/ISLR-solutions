@@ -1,7 +1,5 @@
 ---
 title: "ISLR Chapter 5 solutions"
-author: "Henry Naish"
-date: "18/02/2020"
 output: html_document
 ---
 
