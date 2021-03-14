@@ -1,0 +1,169 @@
+---
+title: "ISLR Chapter 3 - conceptual"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1
+
+**Describe the null hypotheses to which the p-values given in Table 3.4 correspond. Explain what conclusions you can draw based on these p-values. Your explanation should be phrased in terms of sales, TV, radio, and newspaper, rather than in terms of the coefficients of the linear model.**
+
+The null hypotheses to which the p-values for `TV`, `radio` and `newspaper` correspond are that any change in these advertising budgets have a zero effect on the response, `sales`. From these p-values, we can reject the null hypotheses for both `TV` and `radio` - for instance, we can conclude to a high level of confidence that a \$1,000 increase in the TV advertising budget leads to a further 189 units sold. Similarly, a \$1,000 increase in the radio advertising budget will lead to a further 46 units sold. Given the size of the p-value for newspaper advertising budget, we cannot reject the null hypothesis. 
+
+## Exercise 2
+
+**Carefully explain the differences between the KNN classifier and KNN regression methods.**
+
+In effect, both the classification and regression applications of KNN perform the same calculation, averaging over $K$ points nearest to the test case that we want to predict. However, the prediction output is different - while the regression method outputs a prediction of the actual value, the classifier can be interpreted probabilistically. 
+
+The KNN classifier takes the $K$ points nearest to the test observation to estimate the class of the test point. For instance, if $K$ is 3, then it will take the nearest three points and calculate the fraction of these three points that falls in the class we are trying to predict. For instance, if one of these points is of this class, it will estimate the probability as one third. In a two-class problem, this is not above the 50% decision boundary so the test case will be classified as the other class. 
+
+KNN applied to regression takes the $K$ nearest neighbours and takes the mean average over these points to give a prediction of a test case. If, for instance, $K$ is 3, and each point has a value of 1, 2, and 3 for the response variable, KNN will output the the mean of these values, 2, as the prediction. 
+
+## Exercise 3
+
+**Suppose we have a data set with five predictors, $X_1$ = GPA, $X_2$ = IQ, $X_3$ = Gender (1 for Female and 0 for Male), $X_4$ = Interaction between GPA and IQ, and $X_5$ = Interaction between GPA and Gender. The response is starting salary after graduation (in thousands of dollars). Suppose we use least squares to fit the model, and get $\hat{\beta}_0$ = 50, $\hat{\beta}_1$ = 20, $\hat{\beta}_2$ = 0.07, $\hat{\beta}_3$ = 35, $\hat{\beta}_4$ = 0.01, $\hat{\beta}_5$ = -10.**
+
+**Which answer is correct and why?**
+
+**i.   For a fixed value of IQ and GPA, males earn more on average than females.**
+
+**ii.  For a fixed value of IQ and GPA, females earn more on average than males.**
+
+**iii. For a fixed value of IQ and GPA, males earn more on average than females provided that the GPA is high enough.**
+
+**iv.  For a fixed value of IQ and GPA, females earn more on average than males provided that the GPA is high enough.**
+
+The model described is:
+
+$$
+Y = 50 + 20X_1 + 0.07X_2 + 35X_3 + 0.01X_1X_2 - 10X_1X_3
+$$
+
+The interaction term means that if the GPA is sufficiently high, then where gender is female this will reduce salary below where it is male. Where GPA is low, however, the interaction term has much less of an effect, and the coefficient on the gender variable means women will earn more than men. Therefore, option iii, where men earn more than women where GPA is sufficiently high, is the correct answer. 
+
+**Predict the salary of a female with IQ of 110 and a GPA of 4.0.**
+
+```{r}
+y <- 50 + 20*4 + 0.07*110 + 35*1 + 0.01*4*110 - 10*4*1
+y
+```
+
+
+**True of false: Since the coefficient for the GPA/IQ interaction term is very small, there is very little evidence of an interaction effect. Justify your answer.**
+
+False: statistical significance can be determined by inspecting the p-values of each coefficient. The size of coefficients themselves are determined by the units of measurement and do not indicate significance. 
+
+## Exercise 4
+
+**I collect a set of data ($n=100$ observations) containing a single predictor and a quantitative response. I then fit a linear regression model to the data, as well as a separate cubic regression, i.e. $Y = \beta_0 + \beta_1X + \beta_2X^2 + \beta_3X^3 + \epsilon$.**
+
+**(a) Suppose that the true relationship between $X$ and $Y$ is linear, i.e.$Y = \beta_0 + \beta_1X + \epsilon$. Consider the training residual sum of squares (RSS) for the linear regression, and also the training RSS for the cubic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.**
+
+We would expect the training RSS to be lower in the model with the cubic term than that with the single predictor even if the actual relationship is linear. Simply adding extra variables will result in a lower training RSS as the model would overfit the training data. 
+
+**(b) Answer part (a) using test rather than training RSS.**
+
+In contrast, the test RSS will be lower for the single predictor model because this more closely fits the actual relationship - the increased bias in the simple linear regression would be more than offset by the decrease in variance. 
+
+**(c) Suppose that the true relationship between $X$ and $Y$ is not linear, but we do not know how far it is from linear. Consider the training residual sum of squares (RSS) for the linear regression, and also the training RSS for the cubic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.**
+
+If the actual relationship is non-linear, we would expect the training RSS of the cubic term to be less than the training RSS of the simple model, regardless of how non-linear it is for the same reason outlined above. 
+
+**(d) Answer part (c) using test rather than training RSS.**
+
+For the test RSS we do not have enough information to say either way because if the relationship is only slightly non-linear, the linear model may be a good approximation of the true function. It isn't clear whether the higher variance of the cubic model or greater bias of the linear model would result in higher test RSS without further information.
+
+## Exercise 5
+
+**Consider the fitted values that result from performing linear regression without an intercept. In this setting, the $i$th fitted value takes the form:**
+
+$$
+\hat{y}_i = \hat{\beta}_1x_i
+$$
+
+**where** 
+
+$$
+\hat{\beta}_1 = \frac{\sum_{i=1}^nx_iy_i}{\sum_{i=1}^nx_i^2}
+$$
+
+**Show that we can write:**
+
+$$
+\hat{y}_i = \sum_{i'=1}^na_{i'}y_{i'}
+$$
+
+Substituting for $\hat{\beta}_1$:
+
+$$
+\hat{y}_i = \frac{\sum_{i'=1}^nx_{i'}y_{i'}}{\sum_{i''=1}^nx_{i''}^2} {x_i}=\sum_{i'=1}^n\frac{x_ix_{i'}}{\sum_{i''=1}^nx_{i''}^2}{y_{i'}}
+$$
+
+Let:
+
+$$
+a_{i'} = \frac{x_ix_{i'}}{\sum_{i''=1}^nx_{i''}^2}
+$$
+
+Therefore we can write:
+
+$$
+\hat{y}_i = \sum_{i'=1}^na_{i'}y_{i'}
+$$
+
+## Exercise 6
+**Using (3.4), argue that in the case of simple linear regression, the least squares line always passes through the point** ***($\bar{x}, \bar{y}$)*****.**
+
+The intercept in the simple linear regression case is:
+
+$$\hat{\beta_0} = \bar{y} - \hat{\beta_1}\bar{x}$$
+The regression line can be written as:
+
+$$\hat{y} = \hat{\beta_0} + \hat{\beta_1}x$$
+
+As a simple regression is linear, there must be a point on the regression line that passes through $\bar{x}$. Substituting for $\beta_0$ we can see that where $x = \bar{x}$ we have the following:
+
+$$
+\hat{y} = \bar{y} - \hat{\beta_1}\bar{x} + \hat{\beta_1}\bar{x} = \bar{y}
+$$
+
+Therefore, where the regression line passes through $\bar{x}$, it must at this point also pass through $\bar{y}$, and hence the regression line must pass through $(\bar{x},\bar{y})$.
+
+## Exercise 7
+**It is claimed in the text that in the case of simple linear regression of $Y$ onto $X$, the $R^2$ statistic is equal to the square of the correlation between $X$ and $Y$. Prove that this is the case. For simplicity, you may assume that $\bar{x} = \bar{y} = 0$.**
+
+$R^2$ is defined as:
+$$R^2=1-\frac{RSS}{TSS}$$
+
+Under the assumption of zero means for $X$ and $Y$, we know the following:
+
+$$\beta_0 = 0\\
+\beta_1 = \frac{\sum_{i=1}^n{x_iy_i}}{\sum_{i=1}^n{x_i^2}}\\
+TSS = \sum_{i=1^n}{y_i^2}\\
+RSS = \sum_{i=1}^n{(y_i - \beta_1x_i)^2} = \sum_{i=1}^n{(y_i^2-2\beta_1x_iy_i+\beta_1^2x_i^2)}$$
+Substituting for $\beta_1$, we can write this expression for $RSS$ as follows:
+
+$$RSS = \sum_{i=1}^n{(y_i^2-2\beta_1x_iy_i+\beta_1^2x_i^2)}\\
+=\sum_{i=1}^n{y_i^2}-2\frac{(\sum_{i=1}^nx_iy_i)^2}{\sum_{i=1}^nx_i^2}+\sum_{i=1}^n\beta_1^2x_i^2\\
+= \sum_{i=1}^n{y_i^2}-2\beta_1^2\sum_{i=1}^nx_i^2+\beta_1^2\sum_{i=1}^nx_i^2\\
+= \sum_{i=1}^n{y_i^2}-\beta_1^2\sum_{i=1}^nx_i^2$$
+
+Correlation between $X$ and $Y$ is defined as follows:
+
+$$
+Cor(X,Y) = \frac{\sum_{i=1}^nx_iy_i}{\sqrt{\sum_{i=1}^nx_i^2}\sqrt{\sum_{i=1}^ny_i^2}}
+$$
+
+Squaring and substituting in $\beta_1$:
+
+$$Cor(X,Y)^2 = \frac{(\sum_{i=1}^nx_iy_i)^2}{\sum_{i=1}^nx_i^2\sum_{i=1}^ny_i^2}\\
+= \frac{\beta_1^2(\sum_{i=1}^nx_i^2)^2}{\sum_{i=1}^nx_i^2\sum_{i=1}^ny_i^2}\\
+= \frac{\beta_1^2\sum_{i=1}^nx_i^2}{\sum_{i=1}^ny_i^2}\\
+= \frac{\sum_{i=1}^ny_i^2-\sum_{i=1}^ny_i^2+\beta_1^2\sum_{i=1}^nx_i^2}{\sum_{i=1}^ny_i^2}\\
+= 1 - \frac{\sum_{i=1}^ny_i^2 - \beta_1^2\sum_{i=1}^nx_i^2}{\sum_{i=1}^ny_i^2}\\
+= 1 - \frac{RSS}{TSS}\\
+= R^2$$

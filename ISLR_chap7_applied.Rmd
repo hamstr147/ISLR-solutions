@@ -1,0 +1,652 @@
+---
+title: "ISLR Chapter 7 - applied"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(boot)
+library(ggplot2)
+library(gam)
+library(splines)
+library(MASS)
+library(leaps)
+```
+
+## Exercise 6
+**In this exercise, you will further analyze the `Wage` data set considered throughout this chapter.**
+
+**Perform polynomial regression to predict `wage` using `age`. Use cross-validation to select the optimal degree $d$ for the polynomial. What degree was chosen, and how does this compare to the results of hypothesis testing using ANOVA? Make a plot of the resulting polynomial fit to the data.**
+
+We can use 10-fold cross validation to estimate test error:
+```{r}
+set.seed(1234)
+
+# 10-fold CV
+k <- 10
+cv_error_10 <- vapply(
+  1:10, 
+  function(i) {
+    fit <- glm(wage ~ poly(age, i), data = Wage)
+    cv.glm(Wage, fit, K = k)$delta[1]
+  },
+  1.0
+)
+cv_stderr <- sd(cv_error_10) / sqrt(k)
+
+# Plot to select best model
+ggplot() +
+  geom_path(aes(x = 1:10, y = cv_error_10)) +
+  geom_hline(aes(yintercept = min(cv_error_10) + cv_stderr), colour = "red", linetype = "dashed") +
+  geom_point(aes(x = which.min(cv_error_10), y = min(cv_error_10)), colour = "red", size = 3) +
+  ylab("10-fold CV error") +
+  xlab("Polynomial degree") +
+  scale_x_continuous(breaks = 1:10) + 
+  theme_minimal()
+```
+
+The cross-validation error is minimised at a sixth-degree polynomial; however, using the one-standard-error rule as indicated by the red dashed line, we should use a third degree polynomial.
+
+Using hypothesis testing with ANOVA:
+```{r}
+fit <- lapply(1:10, function(i) lm(wage ~ poly(age, i), data = Wage))
+do.call(anova, fit)
+```
+The ANOVA results are similar, with a p-value exceeding 5% at the comparison of the models with third and fourth degree polynomials, suggesting a third degree polynomial provides a good fit.
+
+Plotting the fitted model against the data:
+```{r}
+# Calculate predictions using each value in `age`, with standard errors
+fit <- fit[[3]]
+age_lims <- range(Wage$age)
+age_grid <- seq(from = age_lims[1], to = age_lims[2])
+preds <- predict(fit, newdata = list(age = age_grid), se = TRUE)
+preds_df <- data.frame(predictors = age_grid,
+                       predictions = preds$fit, 
+                       lower = preds$fit - 2 * preds$se.fit,
+                       upper = preds$fit + 2 * preds$se.fit)
+
+# Plot fitted model using prediction values
+ggplot() +
+  geom_point(aes(x = age, y = wage), alpha = 0.3, data = Wage) +
+  geom_line(aes(x = predictors, y = predictions), colour = "blue", size = 1, data = preds_df) +
+  geom_ribbon(aes(ymin = lower, ymax = upper, x = predictors), data = preds_df, fill = "blue", alpha = 0.2) +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Wage")
+```
+
+**Fit a step function to predict `wage` using `age`, and perform cross-validation to choose the optimal number of cuts. Make a plot of the fit obtained.**
+
+We can perform 10-fold cross validation in the same manner as for polynomial regression:
+```{r}
+set.seed(1234)
+
+cuts <- 1:10
+k <- 10
+
+cv_error_10 <- vapply(
+  cuts + 1,
+  function(x) {
+    Wage$age_cut <- cut(Wage$age, x)
+    fit <- glm(wage ~ age_cut, data = Wage)
+    cv.glm(Wage, fit, K = k)$delta[1]
+  },
+  1.0
+)
+
+cv_stderr <- sd(cv_error_10) / sqrt(10)
+
+ggplot() +
+  geom_path(aes(x = cuts, y = cv_error_10)) +
+  geom_hline(aes(yintercept = min(cv_error_10) + cv_stderr), colour = "red", linetype = "dashed") +
+  geom_point(aes(x = which.min(cv_error_10), y = min(cv_error_10)), colour = "red", size = 3) +
+  ylab("10-fold CV error") +
+  xlab("Number of breaks") +
+  scale_x_continuous(breaks = cuts) + 
+  theme_minimal()
+```
+
+10-fold cross-validation suggests that the number of cuts that gives the lowest CV error is 7 (corresponding to 8 bins); applying the one-standard-error rule, we can pick a step function with 6 cuts (and hence 7 bins).
+
+Plotting this fit against the data:
+```{r}
+fit <- lm(wage ~ cut(age, 7), data = Wage)
+preds <- predict(fit, newdata = list(age = age_grid), se = TRUE)
+preds_df <- data.frame(predictors = age_grid,
+                       predictions = preds$fit, 
+                       lower = preds$fit - 2 * preds$se.fit,
+                       upper = preds$fit + 2 * preds$se.fit)
+
+ggplot() +
+  geom_point(aes(x = age, y = wage), alpha = 0.3, data = Wage) +
+  geom_line(aes(x = predictors, y = predictions), colour = "blue", size = 1, data = preds_df) +
+  geom_ribbon(aes(ymin = lower, ymax = upper, x = predictors), data = preds_df, fill = "blue", alpha = 0.2) +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Wage")
+```
+
+## Exercise 7
+**The Wage data set contains a number of other features not explored in this chapter, such as marital status (`maritl`), job class (`jobclass`), and others. Explore the relationships between some of these other predictors and wage, and use non-linear fitting techniques in order to fit flexible models to the data. Create plots of the results obtained, and write a summary of your findings.**
+
+The variables not considered in the chapter are: `maritl`, `race`, `region`, `jobclass`, `health`, `healt_ins` and `logwage`. `logwage` is just a log-transformed variable of the response, `wage`.
+
+Inspecting the summary below, we can see that for most categorical variables, classes are relatively balanced. Exceptions include: `region`, where all observations are from the Middle Atlantic region, so this can be ignored; `martil`, where there are very few observations in the Widowed, Divorced and Separated categories; and `race`, where there are very few observations in the Other category. 
+
+```{r}
+summary(Wage)
+```
+
+```{r}
+ggplot(data = Wage) + 
+  geom_boxplot(aes(x = jobclass, y = wage)) +
+  facet_grid(cols = vars(race)) +
+  xlab("Job class") +
+  ylab("Wage") +
+  ggtitle("Job class vs wage by race")
+```
+
+The box plots clearly show a relationship between both `jobclass` and `race` with `wage`. Workers in the 'Information' job class appear to earn more on average than their 'Industrial' counterparts, with a significant number of high-earning outliers in the 'White', 'Black' and 'Asian' race groups (albeit with a handful of 'White' workers in 'Information' roles earning an unusually small amount). 'Asian' 'Information' workers are the highest paid group in this plot. 
+
+The largest racial differences between job classes appear among 'Information' workers, with 'Asian' workers earning considerably more, and 'White' workers earning more, than 'Black' workers, with all groups earning more than the 'Other' race category. With the exception of the 'Other' race group, median 'Industrial' wages appear more consistent across racial groups, although there is a relatively large number of high-earning outliers in the 'White'-'Industrial' category. Overall, it appears that both `race` and `jobclass` have a relationship with `wage`.
+
+```{r}
+ggplot(data = Wage) + 
+  geom_boxplot(aes(x = health, y = wage)) +
+  facet_grid(cols = vars(education)) +
+  xlab("Health") +
+  ylab("Wage") +
+  ggtitle("Health vs wage by education") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+```
+
+`wage` clearly and consistently increases with level of education. Similarly, those in the '>= Very Good' category for `health` also consistently earn more. 
+
+```{r}
+ggplot(data = Wage) + 
+  geom_boxplot(aes(x = maritl, y = wage)) +
+  xlab("Marital status") +
+  ylab("Wage") +
+  ggtitle("Marital status vs wage") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) 
+```
+
+Married workers appear to earn more than other workers, with those who have never married appearing to earn the least (although this may be because they tend to be younger). There is a notable number of outliers at the top of the scale for `wage` among married workers. 
+
+```{r}
+ggplot(data = Wage) + 
+  geom_point(aes(x = age, y = wage, colour = maritl), data = Wage) +
+  labs(x = "Age", y = "Wage", colour = "Marital status") +
+  ggtitle("Age vs wage by marital status") +
+  theme_minimal()
+```
+
+The scatter plot shows that the finding that those who have never married earn less may be explained by age rather than marital status, as they are over-represented among younger workers. 
+
+```{r}
+ggplot(data = Wage) + 
+  geom_boxplot(aes(x = health, y = wage)) +
+  facet_grid(cols = vars(health_ins)) +
+  xlab("Health") +
+  ylab("Wage") +
+  ggtitle("Health vs wage by health insurance category") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) 
+```
+
+Although we could hypothesise that those with health insurance may be healthier, this does not appear to be the case; the box plots suggest that these factors may have effects independent of one another, as the median observation in the 'Yes' category with the lower health status still earns more than the median observation in the 'No' category with the higher health status.
+
+```{r}
+ggplot(data = Wage) +
+  geom_point(aes(x = year, y = wage), alpha = 0.2) +
+  xlab("Year") +
+  ylab("Wage") +
+  ggtitle("Year vs wage") +
+  theme_minimal()
+```
+
+Interestingly, wages seem to drop slightly in 2008, which may have been driven by the recession in that year. Otherwise, we might expect an increase in wages each year due to inflation. In order to avoid a one-off event in the data affecting our fit too much, we may want to fit `year` as a linear function or use a spline with fewer degrees of freedom.
+
+In order to fit a model that includes categorical variables as well as a non-linear fit to age, we can use GAMs. As there is some uncertainty over whether `maritl` adds further information beyond `age`, we can fit two models, one without it and one with it, and assess them using hypothesis testing with `anova()`. We will use smoothing splines with `df` set to 4:
+
+```{r}
+fit1 <- gam(wage ~ s(year, df = 2) + s(age) + education + jobclass + health + health_ins + race + maritl, data = Wage)
+
+fit2 <- gam(wage ~ s(year, df = 2) + s(age) + education + jobclass + health + health_ins + race, data = Wage)
+
+anova(fit2, fit1)
+```
+
+The low p-value suggests that the model that includes the  `maritl` variable is an improvement on the model that excludes it. 
+
+```{r}
+par(mfrow = c(2,4))
+plot(fit1, se = TRUE)
+```
+
+The plots provide clear evidence of a non-linear relationship between `wage` and `age`, with wages peaking in middle age. In addition, all the categorical variables also appear to have clear relationships with `wage` with most of the visual relationships reflected in these results - the results for 'Other' in `race` and the smaller categories in `maritl` suggest that we probably should have combined these into simpler variables as they are not informative given their large standard errors. The relationship shown for `year` is broadly linear as expected given the less flexible spline, but we can still see the dip in 2008 that we noted in the plot above.
+
+## Exercise 8
+**Fit some of the non-linear models investigated in this chapter to the `Auto` data set. Is there evidence for non-linear relationships in this data set? Create some informative plots to justify your answer.**
+```{r}
+summary(Auto)
+```
+`origin` is coded as a numeric variable, but is in fact a categorical one without any natural ordering, so we should recode this as a factor. `name` can be ignored as these just identify each row as a make of car. `year` has a sufficient number of values such that we can treat it as continuous, and can essentially be considered a measure of how recent a particular make is. `cylinders` only takes on five unique values between 3 and 8, but we can probably just treat it as a continuous numeric variable as there is a natural ordering to these values and probably just enough variation in them to treat them as such. 
+```{r}
+Auto$origin <- factor(Auto$origin)
+```
+
+We can fit a series of pairwise scatter plots to explore the data:
+```{r}
+pairs(Auto)
+```
+
+It appears that `mpg` may have a non-linear relationship with `displacement`, `horsepower` and `weight`, so we will fit some non-linear models with `mpg` as the repsonse and the remainder of these variables as predictors. 
+
+Fitting some local regressions to explore the data further:
+
+```{r}
+fit1 <- loess(mpg ~ horsepower, span = 0.9, data = Auto)
+fit2 <- loess(mpg ~ displacement, span = 0.9, data = Auto)
+fit3 <- loess(mpg ~ weight, span = 0.9, data = Auto)
+
+plot1 <- ggplot() +
+  geom_point(aes(x = horsepower, y = mpg), data = Auto, alpha = 0.2) +
+  geom_line(aes(x = sort(horsepower), y = fit1$fitted[order(horsepower)]), data = Auto) +
+  theme_minimal()
+
+plot2 <- ggplot() +
+  geom_point(aes(x = displacement, y = mpg), data = Auto, alpha = 0.2) +
+  geom_line(aes(x = sort(displacement), y = fit2$fitted[order(displacement)]), data = Auto) +
+  theme_minimal()
+
+plot3 <- ggplot() +
+  geom_point(aes(x = weight, y = mpg), data = Auto, alpha = 0.2) +
+  geom_line(aes(x = sort(weight), y = fit3$fitted[order(weight)]), data = Auto) +
+  theme_minimal()
+
+gridExtra::grid.arrange(plot1, plot2, plot3, ncol = 2)
+```
+
+Exploratory local regressions suggest that non-linear relationships may exist between `mpg` and the other predictors - this is quite clear for `horsepower` and `displacement`, but perhaps slightly less so for `weight`.
+
+Now we can try a GAM using smoothing splines to corroborate the visual inspection of the local regression outputs:
+```{r}
+fit4 <- gam(mpg ~ s(displacement) + s(horsepower) + s(weight), data = Auto)
+summary(fit4)
+```
+The results of the GAM suggest that non-linear relationships exist for `displacement`, and `horsepower`, given the p-values in the ANOVA for nonparametric effects. This finding is reflected in the plots below (we can see that `weight` is quite linear):
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit4, se = TRUE)
+```
+
+## Exercise 9
+**This question uses the variables `dis` (the weighted mean of distances to five Boston employment centers) and `nox` (nitrogen oxides concentration in parts per 10 million) from the `Boston` data. We will treat `dis` as the predictor and `nox` as the response.**
+
+**Use the `poly()` function to fit a cubic polynomial regression to predict `nox` using `dis`. Report the regression output, and plot the resulting data and polynomial fits.**
+```{r}
+# Fit cubic polynomial regression and report results
+fit <- lm(nox ~ poly(dis, 3), data = Boston)
+summary(fit)
+
+# Calculate fitted values
+dis_range <- range(Boston$dis)
+dis_grid <- seq(from = dis_range[1], to = dis_range[2], by = 0.1)
+preds <- predict(fit, newdata = list(dis = dis_grid), se = TRUE)
+preds_df <- data.frame(predictions = preds$fit,
+                       upr = preds$fit + 2 * preds$se.fit,
+                       lwr = preds$fit - 2 * preds$se.fit)
+# Plot
+ggplot() +
+  geom_point(aes(x = dis, y = nox), data = Boston) +
+  geom_path(aes(x = dis_grid, y = predictions), data = preds_df, size = 1, colour = "blue") +
+  geom_ribbon(aes(ymin = lwr, ymax = upr, x = dis_grid), data = preds_df, alpha = 0.3) +
+  theme_minimal()
+```
+
+The plot suggests the model fits the data quite well. The model output shows a statistically significant relationship between the predictors and response.
+
+**Plot the polynomial fits for a range of different polynomial degrees (say, from 1 to 10), and report the associated residual sum of squares.**
+```{r}
+# Fit models
+fits_poly <- lapply(1:10, function(i) {
+  glm(nox ~ poly(dis, i), data = Boston)
+})
+
+# Calculate RSS and predictions
+predictions <- lapply(fits_poly, function(fit) {
+  d <- length(coefficients(fit)) - 1
+  print(
+    sprintf("RSS for %s degree polynomial: %s",
+            d, 
+            sum(resid(fit)^2))
+  )
+  preds <- predict(fit, newdata = list(dis = dis_grid), se = TRUE)
+  data.frame(predictions = preds$fit,
+             degree = d)
+})
+
+# Plot
+preds_df <- do.call(rbind, predictions)
+ggplot() +
+  geom_point(aes(x = dis, y = nox), data = Boston, alpha = 0.5) +
+  geom_path(aes(x = rep(dis_grid, 10), y = predictions, colour = as.factor(degree)), data = preds_df) +
+  labs(x = "dis", y = "nox", colour = "Polynomial degree") +
+  theme_minimal()
+```
+
+**Perform cross-validation or another approach to select the optimal degree for the polynomial, and explain your results.**
+```{r}
+set.seed(1234)
+
+# Cross validation
+k <- 6
+cv_error <- vapply(1:10,
+                   function(i) {
+                     fit <- fits_poly[[i]]
+                     cv.glm(Boston, fit, K = k)$delta[1]
+                   },
+                   1.0)
+
+cv_stderr <- sd(cv_error) / sqrt(k)
+
+# Plot
+ggplot() +
+  geom_path(aes(x = 1:10, y = cv_error)) +
+  geom_hline(aes(yintercept = min(cv_error) + cv_stderr), colour = "red", linetype = "dashed") +
+  geom_point(aes(x = which.min(cv_error), y = min(cv_error)), colour = "red", size = 3) +
+  ylab("6-fold CV error") +
+  xlab("Polynomial degree") +
+  scale_x_continuous(breaks = 1:10) + 
+  theme_minimal()
+```
+
+6-fold cross validation error is minimised in the model with a cubic polynomial. However, a linear model and quadratic polynomial both have a cross-validation error within one standard error of the cubic polynomial, so we could reasonably choose one of those because they are less complex. Polynomial degrees greater than six overfit the data, particularly a ninth degree polynomial.
+
+**Use the `bs()` function to fit a regression spline to predict `nox` using `dis`. Report the output for the fit using four degrees of freedom. How did you choose the knots? Plot the resulting fit.**
+```{r}
+spline_4df <- bs(Boston$dis, df = 4)
+fit <- glm(nox ~ spline_4df, data = Boston)
+attr(spline_4df, "knots")
+summary(fit)
+```
+The knots are chosen automatically where degrees of freedom are specified. Specifying 4 degrees of freedom results in one knot at the median value of `dis` because the `df` option does not include the intercept. The text states that a cubic spline with 1 knot corresponds to 5 degrees of freedom (parameters are estimated for the three polynomial terms, the intercept, and the basis function for the knot).
+
+```{r}
+preds_df <- predict(fit, newdata = list(dis = dis_grid), se = TRUE)
+preds_df <- data.frame(predictions = preds$fit, 
+                       lower = preds$fit - 2 * preds$se.fit,
+                       upper = preds$fit + 2 * preds$se.fit)
+ggplot() +
+  geom_point(aes(x = dis, y = nox), data = Boston) +
+  geom_path(aes(x = dis_grid, y = predictions), data = preds_df, size = 1, colour = "blue") +
+  geom_ribbon(aes(ymin = lower, ymax = upper, x = dis_grid), data = preds_df, alpha = 0.3) +
+  theme_minimal()
+```
+
+**Now fit a regression spline for a range of degrees of freedom, and plot the resulting fits and report the resulting RSS. Describe the results obtained.**
+```{r}
+# Degrees of freedom range
+dof <- 3:15
+
+# Fit models
+fits_spline <- lapply(dof, 
+               function(dof) {
+                 fit <- glm(nox ~ bs(dis, dof), data = Boston) 
+                 print(
+                   sprintf("RSS for %s degrees of freedom: %s",
+                           dof, 
+                           sum(resid(fit)^2))
+                 )
+                 fit
+               })
+
+# Calculate predictions
+predictions <- lapply(fits_spline, function(fit) {
+  preds <- predict(fit, newdata = list(dis = dis_grid), se = TRUE)
+  data.frame(predictions = preds$fit,
+             dof = fit$df.null - fit$df.residual)
+})
+
+# Plot
+preds_df <- do.call(rbind, predictions)
+ggplot() +
+  geom_point(aes(x = dis, y = nox), data = Boston, alpha = 0.2) +
+  geom_path(aes(x = rep(dis_grid, 13), y = predictions, colour = as.factor(dof)), data = preds_df, alpha = 0.5) +
+  labs(x = "dis", y = "nox", colour = "Degrees of freedom") +
+  theme_minimal()
+```
+
+The regression splines are more stable than the higher degree polynomial regressions, particularly at the extremes of `dis`. The shape of the plots for models over 10 or 11 degrees of freedom is quite wiggly, which may suggest an overly complex fit. Nevertheless, at high values of `dis` none of the regression splines are as variable as the higher-order polynomial fits. 
+
+The RSS is smallest at 14 degrees of freedom, so training RSS does not decrease monotonically as it did for the various polynomial regressions. This is due to the fact that the regression spline fits are not nested - new knot locations are estimated with each new fit. In contrast, for the polynomial fits, where less complex models are nested in more complex models, training RSS decreases monotonically with model complexity.
+
+**Perform cross-validation or another approach in order to select the best degrees of freedom for a regression spline on this data. Describe your results.**
+
+```{r}
+set.seed(1234)
+
+# Cross validation
+k <- 6
+cv_error <- vapply(dof,
+                   function(dof) {
+                     # Calculate bs values before fitting the model, or else `cv.glm` will complain
+                     Boston_modframe <- model.frame(nox ~ bs(dis, dof), data = Boston)
+                     fit <- glm(nox ~ ., data = Boston_modframe)
+                     cv.glm(Boston, fit, K = k)$delta[1] 
+                   },
+                   1.0)
+
+cv_stderr <- sd(cv_error) / sqrt(k)
+
+# Plot
+ggplot() +
+  geom_path(aes(x = dof, y = cv_error)) +
+  geom_hline(aes(yintercept = min(cv_error) + cv_stderr), colour = "red", linetype = "dashed") +
+  geom_point(aes(x = which.min(cv_error) + 2, y = min(cv_error)), colour = "red", size = 3) +
+  ylab("6-fold CV error") +
+  xlab("Degrees of freedom") +
+  scale_x_continuous(breaks = dof) + 
+  theme_minimal()
+```
+
+Cross-validation suggests we should pick the model with  10 degrees of freedom, because this is the fit with the lowest estimated MSE that is within one standard error of the minimum estimated test MSE. The estimated error does not appear very stable however, so may be very dependent on the specific folds used. Overall, when assessed using CV error, regression splines appear to outperform polynomial regressions.
+
+## Exercise 10
+**This question relates to the `College` data set.**
+
+**Split the data into a training set and a test set. Using out-of-state tuition as the response and the other variables as the predictors, perform forward stepwise selection on the training set in order to identify a satisfactory model that uses just a subset of the predictors.**
+```{r}
+set.seed(1234)
+
+# Train/test split
+train_idx <- sample(seq_len(nrow(College)), 0.7 * nrow(College))
+train <- College[train_idx,]
+test <- College[-train_idx,]
+
+# Max number of predictors
+p <- ncol(College) - 2
+
+# Perform forward stepwise selection
+fwd_step <- regsubsets(Outstate ~ ., data = train, method = "forward", nvmax = p)
+fwd_summary <- summary(fwd_step)
+fwd_summary
+
+# Plot BIC of each model to select best model
+ggplot() +
+  geom_path(aes(x = seq_along(fwd_summary$bic), y = fwd_summary$bic)) +
+  geom_point(aes(x = which.min(fwd_summary$bic), y = min(fwd_summary$bic)), size = 3, colour = "red") +
+  xlab("Number of predictors") +
+  ylab("BIC") +
+  theme_minimal()
+```
+
+Performing forward stepwise selection on the training set and using BIC to determine the best fit suggests an 11 variable model, containing `Private`, `Apps`, `Accept`, `Top10perc`, `F.Undergrad`, `Room.Board`, `Terminal`, `S.F.Ratio`, `perc.alumni`, `Expend` and `Grad.Rate` as predictors. 
+
+**Fit a GAM on the training data, using out-of-state tuition as the response and the features selected in the previous step as the predictors. Plot the results, and explain your findings.**
+```{r}
+fit <- gam(Outstate ~ Private + s(Apps) + s(Accept) + s(Top10perc) + s(F.Undergrad) + s(Room.Board) + s(Terminal) + s(S.F.Ratio) + s(perc.alumni) + s(Expend) + s(Grad.Rate), data = train)
+par(mfrow = c(3,4))
+plot(fit, se = TRUE)
+```
+
+The plots suggest that `Expend` has a clear non-linear relationship with `Outstate`. There is Some evidence of non-linearity in a number of other variables (e.g. `Accept` or `Grad.Rate`), and for some variables, there is no evidence for non-linearity (e.g. `F.Undergrad` looks quite linear). `Private` is a categorical variable, but it does appear to have a relationship with `Outstate`.
+
+**Evaluate the model obtained on the test set, and explain the results obtained.**
+```{r}
+preds <- predict(fit, newdata = test)
+mse_nonlinear <- mean((preds - test$Outstate)^2)
+
+fit_lm <- lm(Outstate ~ Private + Apps + Accept + Top10perc + F.Undergrad + Room.Board + Terminal + S.F.Ratio + perc.alumni + Expend + Grad.Rate, data = train)
+preds_linear <- predict(fit_lm, newdata = test)
+mse_linear <- mean((preds_linear - test$Outstate)^2)
+
+paste("Non-linear test RMSE:", sqrt(mse_nonlinear))
+paste("Linear test RMSE:", sqrt(mse_linear))
+
+```
+The test MSE for the non-linear model clearly outperforms the linear model - the RMSE is about $92 lower in the non-linear versus linear fit. However, the RMSE is in the same order of magnitude as the observations so the predictions are still not particularly accurate.
+
+**For which variables, if any, is there evidence of a non-linear relationship with the response?**
+```{r}
+summary(fit)
+```
+The p-values for the ANOVA for nonparametric effects indicate that there is strong evidence for non-linear effects in `Accept` and `Expend` and `S.F.Ratio`. Surprisingly, this also suggests some evidence of non-linearity in `F.Undergrad`, which was not clear from the plots above.
+
+## Exercise 11
+**In Section 7.7, it was mentioned that GAMs are generally fit using a backfitting approach. The idea behind backfitting is actually quite simple. We will now explore backfitting in the context of multiple linear regression.**
+
+**Suppose that we would like to perform multiple linear regression, but we do not have software to do so. Instead, we only have software to perform simple linear regression. Therefore, we take the following iterative approach: we repeatedly hold all but one coefficient estimate fixed at its current value, and update only that coefficient estimate using a simple linear regression. The process is continued until convergence — that is, until the coefficient estimates stop changing.**
+
+**We now try this out on a toy example.**
+
+**Generate a response Y and two predictors $X_1$ and $X_2$, with $n$ = 100.**
+```{r}
+set.seed(123)
+x_1 <-rnorm(100, mean = 50, sd = 2)
+x_2 <- runif(100)
+y <- 10 + 26*x_1 + 10*x_2 + rnorm(100)
+```
+
+**Initialize $\hat{\beta}_1$ to take on a value of your choice. It does not matter what value you choose.**
+```{r}
+beta_1 <- 2
+```
+**Keeping $\hat{\beta}_1$ fixed, fit the model**
+$$
+Y-\hat{\beta}_1X_1=\beta_0+\beta_2X_2+\epsilon
+$$
+```{r}
+a <- y - beta_1 * x_1
+beta_2 <- lm(a ~ x_2)$coef[2]
+```
+**Keeping $\hat{\beta}_2$ fixed, fit the model**
+$$
+Y-\hat{\beta}_2X_2=\beta_0+\beta_1X_1+\epsilon
+$$
+```{r}
+a <- y - beta_2 * x_2
+beta_1 <- lm(a ~ x_1)$coef[2]
+```
+**Write a for loop to repeat (c) and (d) 1,000 times. Report the estimates of $\hat{\beta}_0$, $\hat{\beta}_1$, and $\hat{\beta}_2$ at each iteration of the for loop. Create a plot in which each of these values is displayed, with $\hat{\beta}_0$, $\hat{\beta}_1$, and $\hat{\beta}_2$ each shown in a different color.**
+```{r}
+estimate_matrix <- matrix(nrow = 1000, ncol = 3, dimnames = list(c(), c("beta_0", "beta_1", "beta_2")))
+beta_1 <- 2
+for (i in 1:1000) {
+  a <- y - beta_1 * x_1
+  beta_2 <- lm(a ~ x_2)$coef[2]
+  a <- y - beta_2 * x_2
+  beta_1 <- lm(a ~ x_1)$coef[2]
+  beta_0 <- lm(a ~ x_1)$coef[1]
+  estimate_matrix[i,] <- c(beta_0, beta_1, beta_2)
+}
+
+estimate_df <- as.data.frame(estimate_matrix)
+p <- ggplot(data = estimate_df) +
+  geom_line(aes(x = 1:1000, y = beta_0), colour = "red") +
+  geom_line(aes(x = 1:1000, y = beta_1), colour = "blue") +
+  geom_line(aes(x = 1:1000, y = beta_2), colour = "green") +
+  theme_minimal()
+p
+```
+
+**Compare your answer in (e) to the results of simply performing multiple linear regression to predict $Y$ using $X_1$ and $X_2$. Use the `abline()` function to overlay those multiple linear regression coefficient estimates on the plot obtained in (e).**
+
+Plotting using `ggplot2` so use `geom_hline` instead:
+```{r}
+fit <- lm(y ~ x_1 + x_2)
+fit$coefficients
+as.numeric(estimate_df[1000,])
+
+p +
+  geom_hline(yintercept = fit$coef[1], colour = "red", linetype = "dashed") +
+  geom_hline(yintercept = fit$coef[2], colour = "blue", linetype = "dashed") +
+  geom_hline(yintercept = fit$coef[3], colour = "green", linetype = "dashed") 
+```
+
+The dashed lines indicate the coefficients from the `lm` fit - these are identical to those generated by the iterative process. 
+
+**On this data set, how many backfitting iterations were required in order to obtain a “good” approximation to the multiple regression coefficient estimates?**
+```{r}
+head(estimate_matrix)
+```
+
+The estimates for $\hat{\beta}_0$ and $\hat{\beta}_1$ converged after 2 iterations, while $\hat{\beta}_3$ converged after 3.
+
+## Exercise 12
+**This problem is a continuation of the previous exercise. In a toy example with $p$ = 100, show that one can approximate the multiple linear regression coefficient estimates by repeatedly performing simple linear regression in a backfitting procedure. How many backfitting iterations are required in order to obtain a “good” approximation to the multiple regression coefficient estimates? Create a plot to justify your answer.**
+
+```{r}
+set.seed(123)
+
+# Create 100 predictors
+p <- 100
+n <- 1000
+predictors <- matrix(
+  c(rep(1, 1000), rnorm(p * n, sample(-20:20, 1))),
+  nrow = n,
+  ncol = p + 1
+)
+
+# Create a response
+true_parameters <- sample(-50:50, 101, replace = TRUE)
+y <- predictors %*% true_parameters + rnorm(1000)
+
+# Initial parameters - zero intercept and some random numbers for coefficients
+beta <- c(0, runif(100))
+
+# Create matrix to store parameter estimates
+iterations <- 2000
+estimate_matrix <- matrix(nrow = p + 1, ncol = iterations, dimnames = list(paste0("beta_", 0:100), c()))
+
+# Iterate backfitting process and store estimates in `beta`
+for (i in seq_len(iterations)) {
+  for (j in seq_len(p)) {
+    a <- y - predictors[, -(j + 1)] %*% beta[-(j + 1)]
+    fit <- lm(a ~ predictors[, j + 1])
+    beta[j + 1] <- fit$coef[2]
+    estimate_matrix[j + 1, i] <- fit$coef[2]
+    estimate_matrix[1, i] <- fit$coef[1]
+  }
+}
+
+# Fit multiple regression for comparison
+fit <- lm(y ~ predictors[,-1])
+
+# Plot
+diffs <- t(estimate_matrix - fit$coefficients)
+plot_df <- data.frame(diffs = as.vector(diffs), 
+                      params = rep(colnames(diffs), iterations),
+                      iteration = as.vector(sapply(seq_len(iterations), rep, 101)))
+ggplot(plot_df) +
+  geom_line(aes(x = iteration, y = diffs, colour = params)) +
+  ylab("Difference") +
+  xlab("Iteration") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+The plot shows all 101 parameters' differences between the backfitted model and the `lm` model. The differences shrink to zero very rapidly, but jump around a little through most of the remaining iterations. By the final iteration shown here, the discrepancies are essentially zero, although this level of stability appears to have been reached by roughly the thousandth iteration.

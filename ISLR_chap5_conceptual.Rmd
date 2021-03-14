@@ -1,0 +1,107 @@
+---
+title: "ISLR Chapter 5 - conceptual"
+output: html_document
+---
+## Exercise 1
+
+**Using basic statistical properties of the variance, as well as single-variable calculus, derive (5.6). In other words, prove that $α$ given by (5.6) does indeed minimize $Var(αX + (1 − α)Y)$.**
+
+Write the expression for the variance of $\alpha$ in terms of the variances and covariances of $X$ and $Y$:
+
+$$
+\text{Var}(\alpha X+(1-\alpha)Y)\\
+=\alpha^2\sigma_X^2+2\alpha(1-\alpha)\sigma_{XY}+(1-\alpha)^2\sigma^2_Y\\
+=\alpha^2\sigma_X^2+2\alpha\sigma_{XY}^2-2\alpha^2\sigma_{XY}^2+\sigma_Y^2-2\alpha\sigma^2_Y+\alpha^2\sigma_Y^2\\
+$$
+
+Set the first derivative of this to zero and solve for $\alpha$ to find the minimum:
+$$
+0=2\alpha\sigma_X^2+2\sigma_{XY}^2-4\alpha\sigma_{XY}^2-2\sigma_Y^2+2\alpha\sigma_Y^2\\
+2\sigma_Y^2-2\sigma_{XY}^2=2\alpha(\sigma_x^2-2\sigma_{XY}^2+\sigma_Y^2)
+$$
+$$
+2\alpha=\frac{2\sigma_Y^2-2\sigma_{XY}^2}{\sigma_x^2+\sigma_Y^2-2\sigma_{XY}^2}\\
+\alpha=\frac{\sigma_Y^2-\sigma_{XY}^2}{\sigma_x^2+\sigma_Y^2-2\sigma_{XY}^2}
+$$
+
+## Exercise 2
+**We will now derive the probability that a given observation is part of a bootstrap sample. Suppose that we obtain a bootstrap sample from a set of $n$ observations.**
+
+**What is the probability that the first bootstrap observation is not the $j$th observation from the original sample? Justify your answer.**
+
+This probability would be $\frac{n-1}{n}$. There are $n-1$ out of $n$ observations, other than the $j$th, to choose from.
+
+**What is the probability that the second bootstrap observation is not the jth observation from the original sample?**
+
+It would still be $\frac{n-1}{n}$ because with the bootstrap we sample with replacement. 
+
+**Argue that the probability that the $j$th observation is not in the bootstrap sample is $(1 − 1/n)^n$.**
+
+The probability that any given observation is not in a given bootstrap sample is given by  $\frac{n-1}{n}$. $n$ bootstrap samples would be taken, so the probability that a given sample is not in any of the samples is:
+
+$$
+\left(\frac{n-1}{n}\right)^n\\
+=\left(\frac{n}{n}-\frac{1}{n}\right)^n\\
+=\left(1-\frac{1}{n}\right)^n
+$$
+
+**When $n=5$, what is the probability that the $j$th observation is in the bootstrap sample?**
+
+The probability that the $j$th sample is in the bootstrap sample is:
+```{r}
+1 - (1-1/5)^5
+```
+
+**When $n=100$, what is the probability that the $j$th observation is in the bootstrap sample?**
+```{r}
+1 - (1-1/100)^100
+```
+
+**When $n=10000$, what is the probability that the $j$th observation is in the bootstrap sample?**
+```{r}
+1 - (1-1/10000)^10000
+```
+
+**Create a plot that displays, for each integer value of $n$ from 1 to 100,000, the probability that the $j$th observation is in the bootstrap sample. Comment on what you observe.**
+
+```{r}
+n <- 1:100000
+p <- 1 - (1-1/n)^n
+plot(n, p, type = "l")
+```
+
+The probability drops very rapidly to about 0.63 and then remains at about this amount as $n$ rises.
+
+**We will now investigate numerically the probability that a bootstrap sample of size $n=100$ contains the $j$th observation. Here $j=4$. We repeatedly create bootstrap samples, and each time we record whether or not the fourth observation is contained in the bootstrap sample.**
+
+```{r}
+x <- rep(NA, 10000)
+for(i in 1:10000) {
+  x[i] <- sum(sample(1:100, replace = TRUE) == 4) > 0
+}
+mean(x)
+```
+
+The results obtained by investigating this numerically are very close to the calculated value:
+```{r}
+p[100]
+```
+
+## Exercise 3
+
+**We now review $k$-fold cross-validation.**
+
+**Explain how $k$-fold cross-validation is implemented.**
+$k$-fold cross-validation works by dividing our data into $k$ subsets. We would then train a model on the remaining $k-1$ subsets, and assess the model's performance on the held out $k^{th}$ subset. We would repeat this process $k$ times, each time using a different fold for model assessment. We would then average the performance across each of the $k$ folds to get a measure of model performance (e.g. taking an average of RMSE for a regression model, or the error rate for a classification model).
+
+**What are the advantages and disadvantages of $k$-fold cross-validation relative to:**
+**The validation set approach?**
+$k$-fold cross-validation is less subject to random differences between particular test-training splits than the validation set approach (lower bias). It also makes use of the whole data set to train the model, meaning it is less likely to overstate test error than the validation set approach. However, it is more computationally expensive, as it requires us to fit $k$ models. 
+
+**LOOCV?**
+LOOCV is computationally expensive compared to $k$-fold cross-validation, requiring us to fit as many models as there are observations in the dataset. It is also likely to have higher variance than $k$-fold cross-validation, as all the models fitted are essentially using the same data and so are correlated with one another. LOOCV has the least bias of the three approaches, given that it makes use of essentially the whole sample dataset for each fitted model, and hence is also not affected any randomness in validation or fold splits.
+
+## Exercise 4
+**Suppose that we use some statistical learning method to make a prediction for the response $Y$ for a particular value of the predictor $X$. Carefully describe how we might estimate the standard deviation of our prediction.**
+
+We could use a resampling method like the bootstrap to estimate the standard deviation of our prediction. If the original sample was of size $n$, we would sample with replacement from the original sample to make a new sample of size $n$. We would fit the model to get a prediction for the response $Y$ based on predictor $X$. We would perform this process repeatedly many times to get many different predictions for the response. We could then calculate the standard deviation of these many predictions to get an estimate of the standard deviation of our prediction. 

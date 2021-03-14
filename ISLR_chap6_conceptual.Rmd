@@ -1,0 +1,181 @@
+---
+title: "ISLR Chapter 6 - conceptual"
+output: html_document
+---
+
+## Exercise 1
+
+**We perform best subset, forward stepwise, and backward stepwise selection on a single data set. For each approach, we obtain $p+1$ models, containing $0, 1, 2, ..., p$ predictors. Explain your answers.**
+
+**Which of the three models with $k$ predictors has the smallest training RSS?**
+Best subset will have the smallest training RSS. It determines the best possible model for the training set, unlike forward and backward stepwise selection, which only consider subsets of all possible models.
+
+**Which of the three models with $k$ predictors has the smallest *test* RSS?**
+We do not have enough information to say. We could argue that best subset will again perform best as it takes into account all possible models when training, and so is more likely to find the variables whose true coefficients are non-zero. We could alternatively argue that forward and backward stepwise selection are likely to have lower variance relative to best subset (albeit with correspondingly higher bias). Which of these arguments is decisive is dependent on the particular data or question we are answering, and so we do not have enough information to answer this question. 
+
+**True or False:**
+
+**The predictors in the $k$-variable model identified by forward stepwise are a subset of the predictors in the $(k+1)$-variable model identified by forward stepwise selection.** True: the $(k+1)$-variable model will always contain the variables of the $k$-variable model when performing forward stepwise selection because it will be constructed by taking the $k$-variable model and adding one additional predictor based on our model performance criteria. 
+
+**The predictors in the $k$-variable model identified by backward stepwise are a subset of the predictors in the $(k+1)$-variable model identified by backward stepwise selection.** True: the $(k+1)$-variable model will always contain the variables of the $k$-variable model when performing backward stepwise selection because it will be constructed by taking the least important predictor according to some performance criteria away from the $(k+1)$-variable model. 
+
+**The predictors in the $k$-variable model identified by backward stepwise are a subset of the predictors in the $(k+1)$-variable model identified by forward stepwise selection.** False: the $k$-variable model identified by backward stepwise may contain variables not in the $(k+1)$-variable forward stepwise model.
+
+**The predictors in the $k$-variable model identified by forward stepwise are a subset of the predictors in the $(k+1)$-variable model identified by backward stepwise selection.** False: the same is true of forward relative to backward stepwise as in the previous question -  each variable selection method starts from the $p$-predictor model and null model respectively, and there is no reason that progressively removing or adding predictors, even when measured against the same performance criteria, will yield the same models. 
+
+**The predictors in the $k$-variable model identified by best subset are a subset of the predictors in the $(k+1)$-variable model identified by best subset selection.** False: best subset considers all possible models with $k$ variables at each step, and so new predictors may be added that were not in the $(k-1)$-variable model, and variables may be absent from the $(k+1)$-variable model that were in the $k$-variable model. 
+
+## Exercise 2
+
+**For parts (a) through (c), indicate which of i. through iv. is correct. Justify your answer.**
+
+**a) The lasso, relative to least squares, is:**
+
+**i. More flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.**  
+**ii. More flexible and hence will give improved prediction accuracy when its increase in variance is less than its decrease in bias.**  
+**iii. Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.**  
+**iv. Less flexible and hence will give improved prediction accuracy when its increase in variance is less than its decrease in bias.**  
+
+iii. is correct. Lasso constrains the model coefficients, shrinking some to zero, and hence is less flexible than least squares. This results in a model with increased bias but a decrease in variance. 
+
+**Repeat (a) for ridge regression relative to least squares.**
+
+For ridge regression, iii. is also correct as a similar line of reasoning to lasso is applicable (although the coefficients cannot be shrunk to zero). 
+
+**Repeat (a) for non-linear methods relative to least squares.**
+
+For non-linear methods ii. is correct; these are more flexible and hence will improve prediction accuracy where the increase in variance is less than the decrease in bias.
+
+## Exercise 3
+
+**Suppose we estimate the regression coefficients in a linear regression model by minimising**
+
+$$
+\sum^n_{i=1}(y_i-\beta_0-\sum^p_{j=1}\beta_jx_{ij})^2
+$$
+**subject to**
+$$
+\sum^p_{j=1}|{\beta}_j|\leq{s}
+$$
+**for a particular value of $s$. For parts (a) through (e), indicate which of i. through v. is correct. Justify your answer.**
+
+**(a) As we increase $s$ from 0, the training RSS will:**  
+**i. Increase initially, and then eventually start decreasing in an inverted U shape.**  
+**ii. Decrease initially, and then eventually start increasing in a U shape.**  
+**iii. Steadily increase.**  
+**iv. Steadily decrease.**  
+**v. Remain constant**  
+
+iv. is correct. When $s$ is zero, all coefficients must be zero, so RSS is just the variance of the response. As $s$ increases, the RSS will steadily decrease as the model fits the training data better as the coefficients are less constrained.
+
+**Repeat (a) for**
+**(b) test RSS**
+**(c) variance**
+**(d) (squared) bias**
+**(e) irreducible error**
+
+For test RSS, ii. is correct. As $s$ increases, the reduction in bias will far outweigh the reduction in variance from constraining the model when $s$ is near zero. Eventually, the reduction in variance due to the constraint on the coefficients will outweigh the reduction in bias of increasing $s$, and so it will eventually start increasing.  
+For variance, iii. is correct. The variance will steadily increase as the constraint on the model relaxes because the coefficients start to depend more on the training data set.  
+For bias, iv. is is correct. Setting $s$ to zero results in the highest possible bias for our model, predicting a constant - the mean of our training set. The bias will hence decrease as $s$ increases and the model becomes more flexible.  
+For irreducible error, v. is correct. The irreducible error remains constant regardless of the form of the model we fit, as by definition the irreducible error cannot be explained or eliminated.
+
+## Exercise 4
+**Suppose we estimate the regression coefficients in a linear regression model by minimising**
+$$
+\sum^n_{i=1}(y_i-\beta_0-\sum^p_{j=1}\beta_jx_{ij})^2+\lambda\sum^p_{j=1}\beta_j^2 
+$$
+**for a particular value of $\lambda$. Answer the same series of questions as in 3, this time with respect to $\lambda$ increasing from zero.**
+
+When $\lambda$ is zero, this is the same as normal least squares with no penalty. As $\lambda$ increases, the training RSS will steadily increase because the model will fit the training data less closely, so statement iii. is correct in this case.  
+For test RSS, statement ii. is correct. The decrease in variance is likely to offset the increase in bias as $\lambda$ increases from zero, but once it is sufficiently large the high bias will outweigh the reduction in variance.  
+For variance, statement iv. is correct - variance will steadily decrease the more constrained the coefficients are.   
+For bias, statement iii. is correct - bias will steadily increase the more constrained the model becomes.   
+For irreducible error, v. is still correct - by definition the irreducible error cannot change as outlined in Exercise 3.
+
+## Exercise 5
+**It is well-known that ridge regression tends to give similar coefficient values to correlated variables, whereas the lasso may give quite different coefficient values to correlated variables. We will now explore this property in a very simple setting.**
+
+**Supporse that $n = 2$, $p = 2$, $x_{11} = x_{12}$, $x_{21} = x_{22}$. Furthermore, suppose that $y_1 + y_2 = 0$ and $x_{11} + x_{21} = 0$ and $x_{12} + x_{22} = 0$, so that the estimate for the intercept in a least squares, ridge regression, or lasso model is zero: $\hat{\beta}_0 = 0$.**
+
+**(a) Write out the ridge regression optimisation problem in this setting.**  
+
+For ridge regression we would minimise
+$$
+\sum^2_{i=1}(y_i-\sum_{j=1}^2\beta_jx_{ij})^2+\lambda\sum_{j=1}^2\beta_j^2
+$$
+**(b) Argue that in this setting, the ridge coefficient estimates satisfy $\hat{\beta}_1=\hat{\beta}_2$.**  
+
+Expanding the above expression:
+$$
+(y_1-\beta_1x_{11}-\beta_2x_{12})^2+(y_2-\beta_1x_{21}-\beta_2x_{22})^2+\lambda(\beta_1^2 + \beta_2^2)
+$$
+Let $x_{11}=x_{12}=x_1$ and $x_{21}=x_{22}=x_2$, and using the assumptions that $y_1+y_2=0$ and $x_{11}+x_{21}=0$ and $x_{12}+x_{22}=0$, we can simplify this expression to:
+$$
+2(y_1-x_1(\beta_1+\beta_2))^2+\lambda(\beta_1^2+\beta_2^2)
+$$
+We can immediately see that if we differentiated this expression with respect to either $\beta_1$ or $\beta_2$ in order to find that value at which it is minimised, we would get an expression of the same form in $\beta_1$ or $\beta_2$. Differentiating with respect to $\beta_1$ and setting equal to zero to find the minimum:
+$$
+-4x_1(y_1-x_1(\beta_1+\beta_2))+2\lambda\beta_1=0
+$$
+Rearranging for $\beta_1$:
+$$
+\hat{\beta}_1=\frac{2(x_1y_1-x_1^2\beta_2)}{\lambda+2x_1^2}
+$$
+If we did the same for $\beta_2$ we would find the following estimate:
+$$
+\hat{\beta}_2=\frac{2(x_1y_1-x_1^2\beta_1)}{\lambda+2x_1^2}
+$$
+If we substituted the expression for $\hat{\beta}_1$ into that for $\hat\beta_2$, and vice versa, and rearranged to find an expression just in terms of $x_1$ and $y_1$, given the symmetry of these expression we would clearly expect to find that $\hat{\beta}_1=\hat{\beta}_2$.
+
+**(c) Write out the lasso optimisation problem in this setting.**
+$$
+\sum_{i=1}^2(y_i-\sum_{j=1}^2\beta_jx_{ij})^2+\lambda(|\beta_1|+|\beta_2|)
+$$
+
+**(d) Argue that in this setting, the lasso coefficients $\hat{\beta}_1$ and $\hat{\beta}_2$ are not unique - in other words, there are many possible solutions to the optimisation problem in (c). Describe these solutions.**
+
+Expanding the expression above and simplifying:
+$$
+2(y_1-x_1(\beta_1+\beta_2))^2+\lambda(|\beta_1|+|\beta_2|)
+$$
+If we differentiate this expression with respect to $\beta_1+\beta_2$, making a simplifying assumption that both parameters are not negative, we find that any values that satisfy the following equation would be solutions:
+$$
+\hat{\beta_1}+\hat{\beta_2}=\frac{y_1}{x_1}+\lambda
+$$
+
+The value on the RHS is a constant defined by our predictors $X$, response $Y$ and parameter $\lambda$, so we could find various combinations of $|\hat{\beta_1}|+|\hat{\beta_2}|$ that would satisfy this solution.
+
+## Exercise 6
+**(a) Consider (6.12) with $p = 1$. For some choice of $y_1$ and $\lambda>0$ plot (6.12) as a function of $\beta_1$. Your plot should confirm that (6.12) is solved by (6.14).**
+
+Plotting expression (6.12) as a function of $\beta_1$:
+```{r}
+lambda <- 0.1
+y_1 <- 10
+beta_1 <- seq(8, 10, by = 0.1) 
+ridge_function <- (y_1 - beta_1)^2 + lambda*beta_1^2
+plot(beta_1, ridge_function, type = "l")
+points(x = y_1/(1+lambda), y = min(ridge_function), col = "red")
+```
+
+The minimum in this plot is equal to the calculated minimum as per expression (6.14):
+```{r}
+y_1/(1+lambda)
+```
+
+**(b) Consider (6.13) with $p = 1$. For some choice of $y_1$ and $\lambda > 0$ plot (6.13) as a function of $\beta_1$. Your plot should confirm that (6.13) is solved by (6.15).**
+
+Plotting expression (6.13) as a function of $\beta_1$:
+```{r}
+lambda <- 0.1
+y_1 <- 10
+beta_1 <- seq(8, 12, by = 0.1) 
+lasso_function <- (y_1 - beta_1)^2 + lambda*abs(beta_1)
+plot(beta_1, lasso_function, type = "l")
+points(x = y_1 - lambda/2, y = min(lasso_function), col = "red")
+```
+
+The minimum in this plot is equal to the calculated minimum as per expression (6.14):
+```{r}
+y_1 - lambda/2
+```

@@ -1,0 +1,465 @@
+---
+title: "ISLR Chapter 6 - applied"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(leaps)
+library(glmnet)
+library(pls)
+library(MASS)
+```
+
+## Exercise 8
+**In this exercise, we will generate simulated data, and will then use this data to perform best subset selection.**
+
+**Use the `rnorm()` function to generate a predictor $X$ of length $n=100$, as well as a noise vector $\epsilon$ of length $n=100$.**
+```{r}
+set.seed(123)
+x <- rnorm(100)
+eps <- rnorm(100)
+```
+
+**Generate a response vector $Y$ of length $n=100$ according to the model**
+$$
+Y=\beta_0+\beta_1X+\beta_2X^2+\beta_3X^3+\epsilon 
+$$
+**where $\beta_0$, $\beta_1$, $\beta_2$, and $\beta_0$ are constants of your choice.**
+
+Letting $\beta_0=10$, $\beta_1=2$, $\beta_2=4$ and $\beta_3=3$:
+```{r}
+y <- 10 + 2*x + 4*x^2 + 3*x^3 + eps
+```
+
+**Use the `regsubsets()` function to perform best subset selection in order to choose the best model containing the predictors $X$, $X^2$, ..., $X^{10}$. What is the best model obtained according to $C_p$, $BIC$, and adjusted $R^2$? Show some plots to provide evidence for your answer, and report the coefficients of the best model obtained. Note you will need to use the `data.frame()` function to create a single data set containing both $X$ and $Y$.**
+```{r}
+mydata <- data.frame(x, y)
+reg.fit <- regsubsets(y ~ poly(x, 10, raw = TRUE), data = mydata, nvmax = 10)
+reg.summary <- summary(reg.fit)
+reg.summary
+
+par(mfrow=c(2,2))
+plot(reg.summary$adjr2, type = "l")
+points(which.max(reg.summary$adjr2),reg.summary$adjr2[which.max(reg.summary$adjr2)], col="red",cex=2,pch=20)
+plot(reg.summary$cp, type = "l")
+points(which.min(reg.summary$cp),reg.summary$cp[which.min(reg.summary$cp)], col="red",cex=2,pch=20)
+plot(reg.summary$bic, type = "l")
+points(which.min(reg.summary$bic),reg.summary$bic[which.min(reg.summary$bic)], col="red",cex=2,pch=20)
+```
+
+The best model using adjusted $R^2$ has 7 predictors, and for $C_P$ and $BIC$, 3 predictors. 
+
+The coefficients for each of these models are:
+```{r}
+coef(reg.fit, id = 7)
+coef(reg.fit, id = 3)
+```
+
+**Repeat (c), using forward stepwise selection and also using backwards stepwise selection. How does your answer compare to the results in (c)?**
+```{r}
+regfit.fwd <- regsubsets(y ~ poly(x, 10, raw = TRUE), data = mydata, method = "forward", nvmax = 10)
+reg.summary <- summary(regfit.fwd)
+reg.summary
+par(mfrow=c(2,2))
+plot(reg.summary$adjr2, type = "l")
+points(which.max(reg.summary$adjr2),reg.summary$adjr2[which.max(reg.summary$adjr2)], col="red",cex=2,pch=20)
+plot(reg.summary$cp, type = "l")
+points(which.min(reg.summary$cp),reg.summary$cp[which.min(reg.summary$cp)], col="red",cex=2,pch=20)
+plot(reg.summary$bic, type = "l")
+points(which.min(reg.summary$bic),reg.summary$bic[which.min(reg.summary$bic)], col="red",cex=2,pch=20)
+```
+
+Using forward subset selection, adjusted $R^2$ picked the four variable model, and both $C_p$ and $BIC$ picked the three variable model.
+
+```{r}
+regfit.bwd <- regsubsets(y ~ poly(x, 10), data = mydata, method = "backward", nvmax = 10)
+reg.summary <- summary(regfit.bwd)
+reg.summary
+par(mfrow=c(2,2))
+plot(reg.summary$adjr2, type = "l")
+points(which.max(reg.summary$adjr2),reg.summary$adjr2[which.max(reg.summary$adjr2)], col="red",cex=2,pch=20)
+plot(reg.summary$cp, type = "l")
+points(which.min(reg.summary$cp),reg.summary$cp[which.min(reg.summary$cp)], col="red",cex=2,pch=20)
+plot(reg.summary$bic, type = "l")
+points(which.min(reg.summary$bic),reg.summary$bic[which.min(reg.summary$bic)], col="red",cex=2,pch=20)
+```
+
+Using backward subset selection, adjusted $R^2$ picked the five variable model, $C_p$ the four variable model, and $BIC$ the three variable model. 
+
+These results are quite similar to best subset - adjusted $R^2$ appears to generally pick more complex models, and $BIC$ picked the three variable model with all three methods.
+
+**Now fit a lasso model to the simulated data, again using $X$, $X^2$, ..., $X^{10}$ as predictors. Use cross-validation to select the optimal value of $\lambda$. Create plots of the cross-validation error as a function of $\lambda$. Report the resulting coefficient estimates, and discuss the results obtained.**
+```{r}
+set.seed(123)
+data.mat <- model.matrix(y ~ poly(x, 10, raw = TRUE), data = mydata)[, -1]
+lasso.mod <- cv.glmnet(data.mat, y, alpha = 1)
+plot(lasso.mod)
+```
+
+```{r}
+lasso.coef <- predict(lasso.mod, type="coefficients", s = lasso.mod$lambda.min)
+lasso.coef
+```
+Lasso has selected the first three terms, fitting coefficients that match the true values closely. It has also selected the fourth and sixth terms, but the coefficients for these are very small. All other terms' coefficients have been shrunk to zero.
+
+**Now generate a response vector $Y$ according to the model:**
+$$
+Y = \beta_0 + \beta_7X^7 + \epsilon
+$$
+**and perform best subset selection and the lasso. Discuss the results obtained.**
+```{r}
+y_seventh <- 10 + 3 * I(x^7) + eps
+```
+
+Performing best subsets selection:
+```{r}
+mydata <- data.frame(x, y_seventh)
+reg.fit <- regsubsets(y_seventh ~ poly(x, 10, raw = TRUE), data = mydata, nvmax = 10)
+reg.summary <- summary(reg.fit)
+reg.summary
+
+par(mfrow=c(2,2))
+plot(reg.summary$adjr2, type = "l")
+points(which.max(reg.summary$adjr2),reg.summary$adjr2[which.max(reg.summary$adjr2)], col="red",cex=2,pch=20)
+plot(reg.summary$cp, type = "l")
+points(which.min(reg.summary$cp),reg.summary$cp[which.min(reg.summary$cp)], col="red",cex=2,pch=20)
+plot(reg.summary$bic, type = "l")
+points(which.min(reg.summary$bic),reg.summary$bic[which.min(reg.summary$bic)], col="red",cex=2,pch=20)
+```
+
+Best subset suggests a model with 1 predictor, being the seventh polynomial term, when we use $BIC$ or $C_p$ as the model assessment criterion. Adjusted $R^2$ picks a six variable model.
+
+Now fit a lasso regression:
+```{r}
+set.seed(123)
+data.mat <- model.matrix(y ~ poly(x, 10, raw = TRUE), data = mydata)[, -1]
+lasso.mod <- cv.glmnet(data.mat, y_seventh, alpha = 1)
+plot(lasso.mod)
+lasso.coef <- predict(lasso.mod, type="coefficients", s = lasso.mod$lambda.min)
+lasso.coef
+```
+The model selected by lasso regression has picked out only the seventh polynomial term, with the correct coefficient. 
+
+# Exercise 9
+**In this exercise, we will predict the number of applications received using the other variables in the `College` data set.**
+
+**Split the data set into a training set and a test set.**
+```{r}
+set.seed(123)
+train_idx <- sample(nrow(College), 0.7*nrow(College), replace = FALSE)
+```
+
+**Fit a linear model using least squares on the training set, and report the test error obtained.**
+```{r}
+lm.fit <- lm(Apps ~ ., data = College, subset = train_idx)
+lm.preds <- predict(lm.fit, newdata = College)
+sqrt(mean((College$Apps - lm.preds)[-train_idx]^2))
+```
+
+**Fit a ridge regression model on the training set, with $\lambda$ chosen by cross-validation. Report the test error obtained.**
+```{r}
+xtrain <- model.matrix(Apps ~ ., data = College[train_idx,])[,-1]
+xtest <- model.matrix(Apps ~ ., data = College[-train_idx,])[,-1]
+ridge.fit <- cv.glmnet(xtrain, College$Apps[train_idx], alpha = 0)
+ridge.pred <- predict(ridge.fit, newx = xtest, s = ridge.fit$lambda.min)
+sqrt(mean((College$Apps[-train_idx] - ridge.pred)^2))
+```
+The MSE is higher than that for the initial linear model. 
+
+**Fit a lasso model on the training set, with $\lambda$ chosen by cross-validation. Report the test error obtained, along with the number of non-zero coefficient estimates.**
+```{r}
+lasso.fit <- cv.glmnet(xtrain, College$Apps[train_idx], alpha = 1)
+lasso.pred <- predict(lasso.fit, newx = xtest, s = lasso.fit$lambda.min)
+sqrt(mean((College$Apps[-train_idx] - lasso.pred)^2))
+predict(lasso.fit, s = lasso.fit$lambda.min, type = "coefficients")
+```
+
+The MSE is lower than the initial linear model. Excluding the intercept term there are 17 non-zero coefficients - only `S.F.Ratio` has been shrunk to zero.
+
+**Fit a PCR model on the training set, with $M$ chosen by cross-validation. Report the test error obtained, along with the value of $M$ selected by cross-validation.**
+```{r}
+pcr.fit <- pcr(Apps ~ ., data = College[train_idx,], scale = TRUE, validation = "CV")
+summary(pcr.fit)
+validationplot(pcr.fit, val.type = "MSEP")
+```
+
+The lowest CV error occurs where 16 components are used, which is barely smaller than the number of predictors, 17.
+
+Applying the one-standard-error rule suggests using 7 components:
+```{r}
+cv_errors <- RMSEP(pcr.fit)$val[1,1,]
+one_se_rule <- cv_errors[which.min(cv_errors)] + sd(cv_errors)/sqrt(10) 
+names(which.max(cv_errors[cv_errors < one_se_rule]))
+```
+
+Calculating the test error for 7 components:
+```{r}
+pcr.preds <- predict(pcr.fit, newdata = College[-train_idx,], ncomp = 7)
+sqrt(mean((College$Apps[-train_idx] - pcr.preds)^2))
+```
+Calculating the test error for 16 components:
+```{r}
+pcr.preds <- predict(pcr.fit, newdata = College[-train_idx,], ncomp = 16)
+sqrt(mean((College$Apps[-train_idx] - pcr.preds)^2))
+```
+
+
+**Fit a PLS model on the training set, with $M$ chosen by cross-validation. Report the test error obtained, along with the value of M selected by cross-validation.**
+```{r}
+pls.fit <- plsr(Apps ~ ., data = College[train_idx,], scale = TRUE, validation = "CV")
+summary(pls.fit)
+validationplot(pls.fit, val.type = "MSEP")
+```
+
+CV error is minimised where we use 11 components. However, applying the one-standard-error rule, we should use 3 components:
+```{r}
+cv_errors <- RMSEP(pls.fit)$val[1,1,]
+one_se_rule <- cv_errors[which.min(cv_errors)] + sd(cv_errors/sqrt(10))
+names(which.max(cv_errors[cv_errors < one_se_rule]))
+```
+
+Calculating test error for 3 components:
+```{r}
+pls.preds <- predict(pls.fit, newdata = College[-train_idx,], ncomp = 3)
+sqrt(mean((College$Apps[-train_idx] - pls.preds)^2))
+```
+Calculating test error for 11 components:
+```{r}
+pls.preds <- predict(pls.fit, newdata = College[-train_idx,], ncomp = 11)
+sqrt(mean((College$Apps[-train_idx] - pls.preds)^2))
+```
+
+
+**Comment on the results obtained. How accurately can we predict the number of college applications received? Is there much difference among the test errors resulting from these five approaches?**
+
+Overall, lasso performed best of the models fitted, closely followed by the linear model. Ridge regression performed poorly, with much higher test error than lasso or the simple linear model. PLS and PCR both performed reasonably (slightly worse than the simple linear model) where the number of components was selected that minimised the test error. Where we use the one-standard-error rule to fit a model with fewer components, both performed very badly
+
+Lasso RMSE was 1,316; this is almost half of the mean value of the `Apps` variable, so we do not appear able to predict this very accurately. 
+
+# Exercise 10
+**We have seen that as the number of features used in a model increases, the training error will necessarily decrease, but the test error may not. We will now explore this in a simulated data set.**
+
+**Generate a data set with $p=20$ features, $n= 1000$ observations, and an associated quantitative response vector generated according to the model**
+$$
+Y=X\beta+\epsilon
+$$
+**where $\beta$ has some elements that are exactly equal to zero.**
+```{r}
+set.seed(123)
+n <- 1000
+p <- 20
+
+beta <- rep(1, 20)
+# ensure at least some coefficients are zero
+while(!0 %in% beta) {
+  beta <- sample(0:5, 20, replace = TRUE)
+}
+# make input data
+x <- matrix(
+  rnorm(n * p),
+  nrow = 1000,
+  ncol = 20
+)
+# create response var
+y <- (x %*% beta) + rnorm(n)
+dataset <- data.frame(x, y)
+```
+
+**Split your data set into a training set containing 100 observations and a test set containing 900 observations.**
+```{r}
+train_idx <- sample(1:nrow(x), 100)
+train <- dataset[train_idx,]
+test <- dataset[-train_idx,]
+```
+
+**Perform best subset selection on the training set, and plot the training set MSE associated with the best model of each size.**
+
+**Plot the test set MSE associated with the best model of each size.**
+```{r}
+reg.fit <- regsubsets(y ~ ., data = train, nvmax = 20)
+
+predict.regsubsets <- function (object, newdata, id, ...){
+  form <- as.formula(object$call[[2]])
+  mat <- model.matrix(form,newdata)
+  coefi <- coef(object ,id=id)
+  xvars <- names(coefi)
+  mat[,xvars] %*% coefi
+}
+
+# Training MSE
+preds <- matrix(rep(NA, 100), nrow = 100, ncol = p)
+for (i in 1:20) {
+  preds[,i] <- predict(reg.fit, train, id = i)
+}
+train_mse <- apply(preds, 2, function(x) mean((train$y - x)^2))
+
+# Test MSE
+preds <- matrix(rep(NA, 900), nrow = 900, ncol = p)
+for (i in 1:20) {
+  preds[,i] <- predict(reg.fit, test, id = i)
+}
+test_mse <- apply(preds, 2, function(x) mean((test$y - x)^2))
+
+# Plots
+plot(1:20, train_mse, col = "red", type = "o", xlab = "MSE", ylab = "Model size")
+points(1:20, test_mse, col = "blue", type = "o")
+```
+
+**For which model size does the test set MSE take on its minimum value? Comment on your results. If it takes on its minimum value for a model containing only an intercept or a model containing all of the features, then play around with the way that you are generating the data in (a) until you come up with a scenario in which the test set MSE is minimized for an intermediate model size.**
+```{r}
+# Which model minimises test_mse?
+which.min(test_mse)
+# Summarise reg.fit to get the terms in this model
+summary(reg.fit)
+# Which beta values are 0
+which(beta == 0)
+```
+
+Test MSE is minimised in the 17 variable model. This model omits terms for $X_{12}$, $X_{18}$ and $X_{20}$, which matches the values in $\beta$ which were zero. Furthermore, each subset appears to be nested in the previous one, suggesting that best subset has performed well on the simulated data set, successfully identifying the most relevant terms at each subset.
+
+**How does the model at which the test set MSE is minimized compare to the true model used to generate the data? Comment on the coefficient values.**
+```{r}
+beta
+coef(reg.fit, id = 17)
+```
+
+The other coefficients look reasonably close to the original values.
+
+**Create a plot displaying $\sqrt{\sum_{j=1}^p(\beta_j−\hat{\beta}_j^r)^2}$ for a range of values of $r$, where $\hat{\beta}_j^r$ is the $j$^th^ coefficient estimate for the best model containing $r$ coefficients. Comment on what you observe. How does this compare to the test MSE plot from (d)?**
+```{r}
+squared_beta_diff <- function(r, object, beta) {
+  coefi <- coef(object, id = r)
+  idx <- as.numeric(sub("X", "", names(coefi))[-1])
+  beta_r <- c(0, beta[idx])
+  sqrt(sum((beta_r - coefi)^2))
+}
+
+plot(1:20, sapply(1:20, squared_beta_diff, reg.fit, beta), ylab = "Squared difference", xlab = "r", type = "o")
+```
+
+Similar to the MSE plots in part (d), the difference is minimised at the 17 variable model, and the shape of the plots is broadly consistent. The squared differences with the parameters shows more variation, but the spike at the 10-variable model is consistent with the bump in test MSE for the 10-variable model in the MSE plot. Therefore, how close the actual parameters are to the model coefficients appears to be linked to the model's performance on unseen data.
+
+# Exercise 11
+
+**We will now try to predict per capita crime rate in the `Boston` data set.**
+
+**Try out some of the regression methods explored in this chapter, such as best subset selection, the lasso, ridge regression, and PCR. Present and discuss results for the approaches that you consider.**
+
+We will use 10-fold cross validation to determine tuning parameters and the best number of predictors for best subset selection.
+```{r}
+set.seed(123)
+
+# Train/test split
+train_idx <- sample(seq_len(nrow(Boston)), 0.7 * nrow(Boston))
+train <- Boston[train_idx,]
+test <- Boston[-train_idx,]
+
+# CV folds
+k <- 10
+k_folds <- sample(seq_len(k), nrow(train), replace = TRUE)
+```
+
+Best subsets selection:
+```{r}
+# Best subset selecction
+nvmax <- ncol(Boston) - 1
+
+# CV to determine optimal number of predictors
+cv_results <- matrix(NA, nrow = k, ncol = nvmax)
+for (fold in seq_len(k)) {
+  fit <- regsubsets(crim ~ ., data = train[k_folds != fold,], nvmax = nvmax)
+  for (r in seq_len(nvmax)) {
+    predictions <- predict.regsubsets(fit, train[k_folds == fold,], r)
+    cv_results[fold, r] <- mean((predictions - train[k_folds == fold, "crim"])^2)
+  }
+}
+cv_mses <- apply(cv_results, 2, mean)
+plot(x = 1:nvmax, y = cv_mses, type = "o", xlab = "Number of variables", ylab = "CV MSE")
+points(which.min(cv_mses), cv_mses[which.min(cv_mses)], col="red", cex=2, pch=20)
+
+# Cross validation suggests an 11 variable model for best subsets
+best_subset_fit <- regsubsets(crim ~ ., data = train, nvmax = nvmax)
+summary(best_subset_fit)
+```
+
+10-fold cross validation suggested an 11 variable model using best subset selection. This model would omit the `chas` and `age` variables from the model. 
+
+Lasso regression:
+```{r}
+# Set up model matrices
+xtrain <- model.matrix(crim ~ ., data = train)[,-1]
+xtest <- model.matrix(crim ~ ., data = test)[,-1]
+# Fit model using CV to determine lambda
+lasso.fit <- cv.glmnet(xtrain, train[, "crim"], alpha = 1)
+# Plot
+plot(lasso.fit)
+predict(lasso.fit, s = lasso.fit$lambda.min, type = "coefficients")
+```
+
+10-fold cross-validation suggests a 10 variable model using lasso regression, with 3 coefficients shrunk to zero. The coefficients that are shrunk completely include both `chas` and `age`, which best subset selection omits from the best model (determined using 10-fold cross validation).
+
+Ridge regression:
+```{r}
+# Fit model using CV to determine lambda
+ridge.fit <- cv.glmnet(xtrain, train[, "crim"], alpha = 0)
+# Plot
+plot(ridge.fit)
+predict(ridge.fit, s = ridge.fit$lambda.min, type = "coefficients")
+```
+
+Ridge regression has resulted in comparatively small coefficients for both `tax` and `age` which were shrunk to zero by the lasso fit. In general, we can see that the coefficients are smaller than those for the linear model chosen by best subset selection. 
+
+```{r}
+# Print coefficients from linear model for comparison
+coef(lm(crim ~ ., data = train))
+```
+Interestingly, `chas` has not been shrunk relative to the linear model coefficients.
+
+PCR:
+```{r}
+# Fit PCR
+pcr.fit <- pcr(crim ~ ., data = train, scale = TRUE, validation = "CV", segments = 10)
+summary(pcr.fit)
+# Plot MSEs
+validationplot(pcr.fit, val.type = "MSEP")
+# Identify minimum
+cv_errors <- RMSEP(pcr.fit)$val[1,1,]
+names(which.min(cv_errors))
+```
+
+Cross-validation error is minimised for PCR where the number of components is 13, which is the same as fitting the full linear model. 
+
+**Propose a model (or set of models) that seem to perform well on this data set, and justify your answer. Make sure that you are evaluating model performance using validation set error, cross-validation, or some other reasonable alternative, as opposed to using training error.**
+
+Using the validation set approach to assess model performance:
+```{r}
+# Best subset:
+preds <- predict.regsubsets(best_subset_fit, newdata = test, 11)
+rmse_best_subset <- sqrt(mean((preds - test$crim)^2))
+
+# Lasso:
+preds <- predict(lasso.fit, xtest, s = lasso.fit$lambda.min)
+rmse_lasso <- sqrt(mean((preds - test$crim)^2))
+
+# Ridge:
+preds <- predict(ridge.fit, xtest, s = ridge.fit$lambda.min)
+rmse_ridge <- sqrt(mean((preds - test$crim)^2))
+
+# PCR:
+preds <- predict(pcr.fit, test, ncomp = 13)
+rmse_pcr <- sqrt(mean((preds - test$crim)^2))
+
+test_errors <- c(rmse_best_subset, rmse_lasso, rmse_ridge, rmse_pcr)
+model_fits <- c("best_subset", "lasso", "ridge", "pcr")
+for (i in 1:4) {
+  print(paste0(model_fits[i], ": ", test_errors[i]))
+} 
+```
+
+The best performing model is the ridge regression, with a root mean squared error of 4.19. 
+
+**Does your chosen model involve all of the features in the data set? Why or why not?**
+
+The chosen model does contain all the features because ridge regression shrinks regression coefficients but unlike lasso, does not shrink them to zero. Hence, although a number of coefficients are smaller than in the unpenalised linear model, all features are still used in the ridge regression model.

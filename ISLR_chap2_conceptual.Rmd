@@ -1,0 +1,122 @@
+---
+title: "ISLR Chapter 2 Solutions - conceptual"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+```
+
+## Exercise 1
+
+**For each part (a) through (d), indicate whether we would generally expect the performance of a flexible statistical learning method to be better or worse than an inflexible method. Justify your answer.**
+
+a) **The sample size $n$ is extremely large, and the number of predictors $p$ is small.**  
+A flexible model would outperform an inflexible model as overfitting is unlikely with a small number of predictors relative to observations. 
+
+b) **The number of predictors $p$ is extremely large, and the number of observations $n$ is small.**  
+An inflexible model would perform better than a flexible model as a flexible model is likely to overfit the data. 
+
+c) **The relationship between the predictors and response is highly non-linear.**  
+A flexible model would outperform an inflexible model given a flexible model's lower bias.
+
+d) **The variance of the error terms, i.e. $\sigma^2= Var(\epsilon)$, is extremely high.**  
+An inflexible model would outperform a flexible model, given inflexible models' lower variance.
+
+## Exercise 2
+
+**Explain whether each scenario is a classification or regression problem and indicate whether we are most interested in inference or prediction. Finally, provide $n$ and $p$.**
+
+a) **We collect a set of data on the top 500 firms in the US. For each firm we record profit, number of employees, industry and the CEO salary. We are interested in understanding which factors affect CEO salary.**  
+We are interested in inference, this is a regression problem, and $n$ is 500 and $p$ is 3.
+
+b) **We are considering launching a new product and wish to know whether it will be a** ***success*** **or a** ***failure.*** **We collect data on 20 similar products that were previously launched. For each product we have recorded whether it was a success or failure, price charged for the product, marketing budget, competition price, and ten other variables.**  
+We are interested in prediction, this is a classification problem, and $n$ is 20 and $p$ is 13.
+
+c) **We are interested in predicting the % change in the USD/Euro exchange rate in relation to the weekly changes in the world stock markets. Hence we collect weekly data for all of 2012. For each week we record the % change in the USD/Euro, the % change in the US market, the % change in the British market, and the % change in the German market.**  
+We are interested in prediction, this is a regression problem, and $n$ is 52 and $p$ is 3.
+
+## Exercise 3
+
+**We now revisit the bias-variance decomposition.**
+
+a) **Provide a sketch of typical (squared) bias, variance, training error, test error, and Bayes (irreducible) error cruves, on a single plot, as we go from less flexible statistical learning methods towards more flexible approaches. The** ***x*****-axis should represent the amount of flexibility in the method, and the** ***y*****-axis should represent the values for each curve. there should be five curves. Make sure to label each one.**
+
+b) **Explain why each of the five curves has the shape displayed in part (a).**  
+Bias is high for an inflexible method but reduces as flexibility increases because more flexible models fit the data more closely. Variance will be low for an inflexible model but will increase as flexibility increases because models start to more closely (and eventually over-) fit the data. The irreducible error is a fixed value for a given data set and represents the lower bound for the test error. For classification problems, the irreducible error is the proportion of points that lie on the wrong side of the Bayes decision boundary. The test error cannot go below the irreducible error but will reduce as flexibility increases, but at a certain point inflects as the model starts to overfit the data. This is the point at which the training data goes below the irreducible error (overfitting). The training error always reduces as flexibility increases as more flexible models will fit the training data more closely. 
+
+## Exercise 4
+
+**You will now think of some real life applications of statistical learning.**
+
+**Describe three real-life applications in which classification might be useful. Describe the response, as well as the predictors. Is the goal of each application inference or prediction? Explain your answer.**
+
+a) Whether a stock price moves up or down is an example of a predictive classification problem. We might use lagged stock prices or financial results of a company as predictors. 
+b) Understanding why a member of the public votes for the Labour or Conservative party is an inferential classification problem. We might use demographic information like income, gender, religion, profession, and age as predictors.
+c) Medical diagnosis is a predictive classification problem. We might have symptoms, medical history, age, and lifestyle indicators like smoker/non-smoker, level of exercise, and diet as predictors.
+
+**Describe three real-life applications in which regression might be useful. Describe the response, as well as the predictors. Is the goal of each application inference or prediction? Explain your answer**
+
+a) An estate agent predicting house price movements is an example of regression where prediction is the goal. The response would be house prices and the predictors might be proximity to transport links, crime rates, proximity to good schools, number of rooms and type of property.
+b) A social scientist understanding the determinants of military spending is an example of an inferential regression problem. The response would be military spending in inflation-adjusted USD, and the predictors might be country characteristics like GDP, population, number of countries it shares a border with, whether it is in an international dispute and whether it maintains military alliances.
+c) A company forecasting sales is an example of a predictive regression problem. They might use lagged sales data, marketing expenditure, and economic indicators as predictors, and sales in monetary value as a response. 
+
+**Describe three real-life applications in which cluster analysis might be useful.**
+
+a) A marketing company segmenting customers;
+b) Clustering financial transactions to identify unusual or fraudulent transactions;
+c) Recommender systems for an online streaming service.
+
+## Exercise 5
+
+**What are the advantages and disadvantages of a very flexible (versus a less flexible) approach for regression or classification? Under what circumstances might a more flexible approach be preferred to a less flexible approach? When might a less flexible approach be preferred?**
+
+A very flexible method has low bias and will fit highly non-linear data well. A less flexible approach might be preferred where there are very few observations so you may want to minimise the risk of overfitting, as a high variance method would likely result in a signficantly different model for unseen data. Less flexible methods like linear regression are more easily interpretable so might be preferred for an inference problem, while prediction might lead you to choose a more flexible model. 
+
+## Exercise 6
+
+**Describe the differences between a parametric and a non-parametric statistical learning approach. What are the advantages of a parametric approach to a regression or classification (as opposed to a non-parametric approach)? What are the disadvantages?**
+
+A parametric model requires the estimation of a fixed set of values that define a function that we use to calculate outputs. An example of this is linear regression, where we estimate coefficients applied to each predictor (and a constant). A non-parametric method, like KNN, does not simplify the problem to estimating a small number of values as such a method would not make any assumptions about a specific functional form. Instead it would fit a model that closely fits the data while attempting not to overfit. A non-parametric model might perform better if the distribution of the data is unknown, as it would fit a wider range of distributions. However, to ensure that the model does not overfit, we would need a large number of observations - a small number might mean a parametric method might perform better. 
+
+## Exercise 7
+
+**The table below provides a training data set containing six observations, three predictors, and one qualitative response variable.**
+```{r, echo=FALSE, results=TRUE}
+df <- data.frame(
+  X1 = c(0,2,0,0,-1,1),
+  X2 = c(3,0,1,1,0,1),
+  X3 = c(0,0,3,2,1,1),
+  Y = c("Red", "Red", "Red", "Green", "Green", "Red"),
+  stringsAsFactors = FALSE
+)
+kable(df, align = rep("c", 4)) %>% 
+  kable_styling()
+```
+
+**Suppose we wish to use this data set to make a prediction for $Y$ when $X_1=X_2=X_3=0$ using $K$-nearest neighbors.**
+
+**Compute the Euclidean distance between each observation and the test point, $X_1=X_2=X_3=0$.**
+```{r, echo=TRUE}
+# The data is saved in a data frame called df
+x_mat <- as.matrix(df[, -4])
+dists <- apply(x_mat, 1, function(x) sqrt(sum(x^2)))
+names(dists) <- df$Y
+round(dists, 2)
+```
+
+**What is our prediction with $K=1$? Why?**
+```{r, echo=TRUE}
+names(dists[which(dists == min(dists))])
+```
+If $K=1$, then our prediction would be Green, as this is the closest single point. 
+
+**What is our prediction with $K=3$? Why?**
+```{r, echo=TRUE}
+table(names(head(sort(dists), 3)))
+```
+If $K=3$, then our prediction would be Red, as two of the three closest points are Red, and just one is Green. 
+
+**If the Bayes' decision boundary is highly non-linear, then would we expect the _best_ value for $K$ to be large or small? Why?**  
+We would expect a low $K$ to give a better prediction, as it would fit the decision boundary more closely. 

@@ -1,0 +1,271 @@
+---
+title: "ISLR Chapter 2 - applied"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+```
+
+## Exercise 8
+
+**This exercise relates to the `College` data set, which can be found in the file `College.csv`. It contains a number of variables for 777 different universities and colleges in the US. The variables are**  
+-**`Private`: Public/private indicator**  
+-**`Apps`: Number of applications received**    
+-**`Accept`: Number of applicants accepted**   
+-**`Enroll`: Number of new students enrolled**   
+-**`Top10perc`: New students from top 10 % of high school class**  
+-**`Top25perc`: New students from top 25 % of high school class * F.Undergrad : Number of full-time undergraduates**   
+-**`P.Undergrad`: Number of part-time undergraduates**   
+-**`Outstate`: Out-of-state tuition**   
+-**`Room.Board`: Room and board costs**   
+-**`Books`: Estimated book costs**   
+-**`Personal`: Estimated personal spending**   
+-**`PhD`: Percent of faculty with Ph.D.’s**   
+-**`Terminal`: Percent of faculty with terminal degree**   
+-**`S.F.Ratio`: Student/faculty ratio**   
+-**`perc.alumni`: Percent of alumni who donate**   
+-**`Expend`: Instructional expenditure per student**   
+-**`Grad.Rate`: Graduation rate**    
+**Before reading the data into R, it can be viewed in Excel or a text editor.**
+
+**Use the `read.csv()` function to read the data into `R`. Call the loaded data college. Make sure that you have the directory set to the correct location for the data.**
+```{r}
+college <- read.csv("https://www.statlearning.com/s/College.csv", stringsAsFactors = TRUE)
+head(college)
+```
+
+**Look at the data using the `fix()` function. You should notice that the first column is just the name of each university. We don’t really want `R` to treat this as data. However, it may be handy to have these names for later. Try the following commands:**  
+```
+rownames(college)=college[,1]
+fix(college)
+```
+```{r}
+rownames(college) <- college[, 1]
+#View(college)
+```
+**You should see that there is now a `row.names` column with the name of each university recorded. This means that `R` has given each row a name corresponding to the appropriate university. `R` will not try to perform calculations on the row names. However, we still need to eliminate the first column in the data where the names are stored. Try**
+```
+college=college[,-1]
+fix(college)
+```
+**Now you should see that the first data column is `Private`. Note that another column labeled `row.names` now appears before the `Private` column. However, this is not a data column but rather the name that `R` is giving to each row.**
+```{r}
+college <- college[, -1]
+#View(college)
+```
+
+**Use the `summary()` function to produce a numerical summary of the variables in the data set.**
+```{r}
+summary(college)
+```
+**Use the `pairs()` function to produce a scatterplot matrix of the first ten columns or variables of the data. Recall that you can reference the first ten columns of a matrix `A` using `A[,1:10]`.**
+```{r}
+pairs(college[, 1:10])
+```
+
+**Use the `plot()` function to produce side-by-side boxplots of `Outstate` versus `Private`.**
+```{r}
+plot(college$Private, college$Outstate)
+```
+
+**Create a new qualitative variable, called `Elite`, by binning the `Top10perc` variable. We are going to divide universities into two groups based on whether or not the proportion of students coming from the top 10% of their high school classes exceeds 50%.**
+```{r}
+Elite <- rep("No", nrow(college))
+Elite[college$Top10perc > 50] <- "Yes"
+Elite <- as.factor(Elite)
+college <- data.frame(college, Elite)
+```
+**Use the `summary()` function to see how many elite universities there are. Now use the `plot()` function to produce side-by-side boxplots of `Outstate` versus `Elite`.**
+```{r}
+summary(college)
+plot(college$Elite, college$Outstate)
+```
+
+**Use the `hist()` function to produce some histograms with differing numbers of bins for a few of the quantitative variables. You may find the command `par(mfrow=c(2,2))` useful: it will divide the print window into four regions so that four plots can be made simultaneously. Modifying the arguments to this function will divide the screen in other ways.**
+```{r}
+par(mfrow=c(2,2))
+hist(college$Apps, breaks = 40)
+hist(college$Accept, breaks = 40)
+hist(college$Enroll, breaks = 20)
+hist(college$Room.Board, breaks = 30)
+```
+
+**Continue exploring the data, and provide a brief summary of what you discover.**
+```{r}
+par(mfrow = c(2,2))
+plot(college$S.F.Ratio, college$Grad.Rate)
+plot(college$Expend, college$Grad.Rate)
+plot(college$Top25perc, college$Grad.Rate)
+plot(college$P.Undergrad/(college$P.Undergrad + college$F.Undergrad), college$Grad.Rate)
+```
+
+Expenditure per student appears to have a positive impact on graduation rate, although expenditure shows diminishing returns past approximately 20,000. The relationship between the SF ratio and graduation rate seems surprisingly weak (although may be slightly negative, as expected). High school performance appears to be a good predictor of performance at college, with the top 25 per cent variable showing a correlation with graduation rate. The proportion of part time undergraduates does not appear to be strongly correlated with graduation rates. 
+
+```{r}
+par(mfrow=c(2,2))
+plot(college$Private, college$perc.alumni)
+plot(college$Private, college$Grad.Rate)
+plot(college$Elite, college$Expend)
+plot(college$Elite, college$Apps)
+```
+
+The box plots suggest that private schools tend to have higher graduation rates and that more alumni donate to them. Furthermore, elite schools get more applications and have higher levels of expenditure, as we would expect. 
+
+```{r}
+par(mfrow=c(2,2))
+plot(college$Enroll, college$Accept)
+plot(college$Private, college$Outstate)
+plot(college$Expend, college$Personal)
+plot(college$Private, college$Terminal)
+```
+
+The level of enrollment versus acceptance is very low, as shown in the first scatter plot above. We can also observe that private schools have higher levels of out-of-state tuition. The level of personal expenditure is associated with lower levels of instructional expenditure. The bottom left boxplot shows that private schools have slightly lower numbers of faculty members with terminal degrees, although the distribution is quite wide. 
+
+## Exercise 9
+
+**This exercise involves the `Auto` data set. Make sure that the missing values have been removed from the data.**
+```{r}
+auto <- read.csv("https://www.statlearning.com/s/Auto.csv", header = TRUE, na.strings = "?", stringsAsFactors = TRUE)
+auto <- na.omit(auto)
+```
+**Which of the predictors are quantitative, and which are qualitative?**
+```{r}
+summary(auto)
+```
+The variables `origin` and `name` are qualitative - although the former is coded in this data set as an integer. All other variables are quantitative (although there is some ambiguity about how we should deal with certain variables - for example, the `cylinders` variable only has a small number of unique values, so could be considered a set of categories). `year` might also be considered a special case as a date variable.
+
+**What is the range of each quantitative predictor? You can answer this using the `range()` function.**
+```{r}
+sapply(auto[, 1:7], range)
+```
+
+**What is the mean and standard deviation of each quantitative predictor?**
+```{r}
+sapply(auto[, 1:7], mean)
+sapply(auto[, 1:7], sd)
+```
+
+**Now remove the 10^th^ through 85^th^ observations. What is the range, mean, and standard deviation of each predictor in the subset of the data that remains?**
+```{r, collapse=TRUE}
+auto_subset <- auto[-c(10:85),]
+
+print("Range")
+sapply(auto_subset[1:7], range)
+print("Mean")
+sapply(auto_subset[1:7], mean)
+print("Standard deviation")
+sapply(auto_subset[1:7], sd)
+```
+
+**Using the full data set, investigate the predictors graphically, using scatterplots or other tools of your choice. Create some plots highlighting the relationships among the predictors. Comment on your findings.**
+```{r}
+par(mfrow = c(2,2))
+plot(auto$mpg, auto$cylinders)
+plot(auto$year, auto$mpg)
+plot(auto$acceleration, auto$cylinders)
+plot(auto$weight, auto$mpg)
+```
+
+Number of `cylinders` is negatively correlated with `mpg` and `acceleration`. There is a clear negative relationship between `weight` and `mpg`. It also appears that cars have become more fuel efficient over time, with `mpg` increasing with `year`. 
+
+```{r}
+par(mfrow = c(1,2))
+plot(as.factor(auto$origin), auto$displacement)
+plot(as.factor(auto$origin), auto$mpg)
+```
+
+`origin` also appears to be a good indicator for car characteristics - European and Japanese cars have lower engine `displacement` and are more fuel efficient than their US counterparts. 
+
+**Suppose that we wish to predict gas mileage (`mpg`) on the basis of the other variables. Do your plots suggest that any of the other variables might be useful in predicting `mpg`? Justify your answer.**
+
+If we wanted to predict mileage (`mpg`), the plots above suggest a number of variables that would be useful in predicting `mpg`. Clear negative relationships with `weight` and `cylinders`, and positive relationships with `year` and non-US `origin` all suggest that these variables include useful information that could be used to predict fuel efficiency.  
+
+## Exercise 10
+
+**This exercise involves the** `Boston` **housing data set.**
+
+**To begin, load in the `Boston` data set. The `Boston` data set is part of the `MASS` library in `R`.**
+```{r}
+library(MASS)
+```
+
+**Now the data set is contained in the object Boston.**
+```
+Boston
+```
+
+**Read about the data set:**
+```
+?Boston
+```
+
+**How many rows are in this data set? How many columns? What do the rows and columns represent?**
+
+The Boston data set has 506 observations (neighbourhoods) and 14 features (housing values and other variables).
+```{r}
+dim(Boston)
+```
+
+**Make some pairwise scatterplots of the predictors (columns) in this data set. Describe your findings.**
+```{r}
+pairs(Boston)
+```
+
+The number of rooms (`rm`) is positively correlated with median value (`medv`), while the lower status variable (`lstat`) is strongly negatively correlated with median value (`medv`). Employment centers (`dis`) appear to be less common in residential areas. Nitrous oxide emissions (`nox`) and employment centers (`dis`) appear to be negatively correlated, although this is probably because `nox` is higher in industrial areas (`indus`), while `dis` is correlated with `zn` (areas with large areas of zoned residential land). 
+
+**Are any of the predictors associated with per capita crime rate? If so, explain the relationship.**
+
+Per capita crime rate is associated with lower home values (`medv`). It is also associated with lower distance from employment centres (`dis`). Crime appears to be associated with areas with a low proportion of residential lots of over 25,000 sqft (`zn`). Areas that do not border the Charles River (`chas`) appear more likely to suffer from higher crime rates. Older buildings also appear to correlate with higher crime (`age`).
+
+**Do any of the suburbs of Boston appear to have particularly high crime rates? Tax rates? Pupil-teacher ratios? Comment on the range of each predictor.**
+```{r}
+paste0("crim: ", range(Boston$crim)[1], ",", range(Boston$crim)[2])
+paste0("ptratio: ", range(Boston$ptratio)[1], ",", range(Boston$ptratio)[2])
+paste0("tax: ", range(Boston$tax)[1], ",", range(Boston$tax)[2])
+
+par(mfrow = c(2,2))
+hist(Boston$crim, 40)
+hist(Boston$ptratio, 40)
+hist(Boston$tax, 40)
+```
+
+The pairwise plots suggest that specific `tax` rates and `ptratio` values appear to correlate with high crime rates. The range for `crim` is very wide, as are those for `tax` and `ptratio`. The histograms show that there is a large cluster of outliers for the `tax` variable above a value of approximately 650, while a large number of observations appear to be in the `ptratio` value at just above 20, although the `ptratio` data appears to be more evenly distributed. Most neighborhoods seem relatively safe with low crime rates, with the distribution showing a long tail of high crime neighborhoods.
+
+**How many of the suburbs in this data set bound the Charles river?**
+```{r}
+sum(Boston$chas)
+```
+
+**What is the median pupil-teacher ratio among the towns in this data set?**
+```{r}
+median(Boston$ptratio)
+```
+
+**Which suburb of Boston has lowest median value of owner-occupied homes? What are the values of the other predictors for that suburb, and how do those values compare to the overall ranges for those predictors? Comment on your findings.**
+```{r}
+Boston[which(Boston$medv == min(Boston$medv)),]
+```
+
+Suburbs 399 and 406 have the joint lowest value for `medv`. They both have the same `ptratio` and `tax` value, both of which sit at the upper end of each of those variables' ranges. However, they have markedly different crime rates - 399 has reasonably high levels of crime, but 406 is towards the upper end of the range. 
+
+```{r}
+paste0("lstat: ", range(Boston$lstat)[1], ",", range(Boston$lstat)[2])
+paste0("age: ", range(Boston$age)[1], ",", range(Boston$age)[2])
+paste0("indus: ", range(Boston$indus)[1], ",", range(Boston$indus)[2])
+paste0("zn: ", range(Boston$zn)[1], ",", range(Boston$zn)[2])
+```
+
+Considering some other variables: lower status households (`lstat`) are both above the median value in these suburbs. They are both also at the top end of the `age` variable, suggesting they both have lots of older buildings. Both also have relatively (though not excessively) high amount of industrial land (`indus`).
+
+**In this data set, how many of the suburbs average more than seven rooms per dwelling? More than eight rooms per dwelling? Comment on the suburbs that average more than eight rooms per dwelling.**
+```{r}
+paste("More than 7:", nrow(Boston[which(Boston$rm > 7),]))
+paste("More than 8:", nrow(Boston[which(Boston$rm > 8),]))
+```
+
+The suburbs that average more than 8 rooms per dwelling are shown below. All suburbs with more than 8 room houses on average have a median property value that is above average for the Boston dataset. They are in low crime areas, and most are in areas where zoned lots of over 25,000ft are absent, although some do have high values on this variable, notably row 205. One area has a high amount of property for industrial use. Only one of these neighbourhoods borders the Charles river. Unsurprisingly, these areas have lower values for `lstat` (lower status of population). While most are accessible to radial highways, some have much lower indices for this predictor.
+```{r}
+Boston[which(Boston$rm > 8),]
+```
+
