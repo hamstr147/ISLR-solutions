@@ -6,6 +6,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(kableExtra)
+library(ggplot2)
 ```
 
 ## Exercise 1
@@ -43,8 +44,36 @@ We are interested in prediction, this is a regression problem, and $n$ is 52 and
 
 a) **Provide a sketch of typical (squared) bias, variance, training error, test error, and Bayes (irreducible) error cruves, on a single plot, as we go from less flexible statistical learning methods towards more flexible approaches. The** ***x*****-axis should represent the amount of flexibility in the method, and the** ***y*****-axis should represent the values for each curve. there should be five curves. Make sure to label each one.**
 
+Test error is green, training error purple, squared bias blue, variance red and irreducible error is the dashed line.
+```{r, echo = FALSE}
+x <- seq(0.4, 10, 0.1)
+bias <- 2 - log(x)
+variance <- rev(bias)
+irr_err <- 1
+optimal <- x[which(bias == variance)]
+test_error <- bias + variance + irr_err
+train_error <- test_error - variance - 0.4
+
+plot_df <- data.frame(x, bias, variance, test_error, train_error)
+  
+ggplot(plot_df) +
+  geom_path(aes(x = x, y = bias), colour = "blue") +
+  geom_path(aes(x = x, y = variance), colour = "red") +
+  geom_hline(aes(yintercept = irr_err), linetype = "dashed") +
+  geom_vline(aes(xintercept = optimal), linetype = "dotted") +
+  geom_path(aes(x = x, y = test_error), colour = "green") +
+  geom_path(aes(x = x, y = train_error), colour = "purple") +
+  xlab("Flexibility") +
+  ylab("Error") +
+  theme_minimal() +
+  theme(axis.text = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(axis.line = element_line(colour = "black"))
+```
+
+
 b) **Explain why each of the five curves has the shape displayed in part (a).**  
-Bias is high for an inflexible method but reduces as flexibility increases because more flexible models fit the data more closely. Variance will be low for an inflexible model but will increase as flexibility increases because models start to more closely (and eventually over-) fit the data. The irreducible error is a fixed value for a given data set and represents the lower bound for the test error. For classification problems, the irreducible error is the proportion of points that lie on the wrong side of the Bayes decision boundary. The test error cannot go below the irreducible error but will reduce as flexibility increases, but at a certain point inflects as the model starts to overfit the data. This is the point at which the training data goes below the irreducible error (overfitting). The training error always reduces as flexibility increases as more flexible models will fit the training data more closely. 
+Bias is high for an inflexible method but reduces as flexibility increases because more flexible models fit the data more closely. Variance will be low for an inflexible model but will increase as flexibility increases because models start to more closely (and eventually over-) fit the data. The irreducible error is a fixed value for a given data set and represents the lower bound for the test error. For classification problems, the irreducible error is the proportion of points that lie on the wrong side of the Bayes decision boundary. The test error cannot go below the irreducible error but will reduce as flexibility increases, but after the point where the optimal bias-variance trade off is reached (the dotted vertical line), inflects as the model starts to overfit the data. This is the point at which the training data goes below the irreducible error (overfitting). The training error always reduces as flexibility increases as more flexible models will fit the training data more closely. 
 
 ## Exercise 4
 
