@@ -1,5 +1,5 @@
-# ISLR-notes
-ISLR solutions to exercises:
+# ISLR
+Solutions to exercises:
 
 [Chapter 2 - conceptual](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap2_conceptual.html)<br>
 [Chapter 2 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap2_applied.html)<br>
