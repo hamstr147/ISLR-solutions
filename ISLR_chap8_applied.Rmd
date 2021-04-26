@@ -301,3 +301,44 @@ mean(knn_caravan[knn_caravan == "Yes"] == test_purchase[knn_caravan == "Yes"])
 ```
 
 KNN does not perform as well as boosting in terms of predicted purchases actually being purchases.
+
+## Exercise 12
+**Apply boosting, bagging, and random forests to a data set of your choice. Be sure to fit the models on a training set and to evaluate their performance on a test set. How accurate are the results compared to simple methods like linear or logistic regression? Which of these approaches yields the best performance?**
+
+```{r}
+set.seed(1)
+
+# Train/test split
+smarket <- Smarket[, which(names(Smarket) != "Today")]
+train <- sample(seq_len(nrow(smarket)), 0.7 * nrow(smarket))
+
+# Random forest
+rf_smarket <- randomForest(x = smarket[train, which(names(smarket) != "Direction")],
+                           y = smarket[train, "Direction"],
+                           xtest = smarket[-train, which(names(smarket) != "Direction")],
+                           ytest = smarket[-train, "Direction"])
+sprintf("Random forest accuracy: %s", mean(rf_smarket$test$predicted == smarket[-train, "Direction"]))
+
+# Bagging
+bag_smarket <- randomForest(x = smarket[train, which(names(smarket) != "Direction")],
+                            y = smarket[train, "Direction"],
+                            xtest = smarket[-train, which(names(smarket) != "Direction")],
+                            ytest = smarket[-train, "Direction"],
+                            mtry = ncol(smarket) - 1)
+sprintf("Bagging  accuracy: %s", mean(bag_smarket$test$predicted == smarket[-train, "Direction"]))
+
+# Boosting
+train_data <- smarket[train,]
+train_data$Direction <- ifelse(train_data$Direction == "Up", 1, 0)
+boost_smarket <- gbm(Direction ~ ., data = train_data, distribution = "bernoulli")
+boost_preds <- predict(boost_smarket, smarket[-train,], type = "response") 
+boost_pred_class <- ifelse(boost_preds > 0.5, "Up", "Down")
+sprintf("Boosting accuracy: %s", mean(boost_pred_class == smarket[-train, "Direction"]))
+
+# Logistic regression
+logistic_reg <- glm(Direction ~ ., data = smarket[train,], family = "binomial")
+logistic_preds <- predict(logistic_reg, smarket[-train,], type = "response")
+logistic_pred_class <- ifelse(logistic_preds > 0.5, "Up", "Down")
+sprintf("Logistic regression accuracy: %s", mean(logistic_pred_class == smarket[-train, "Direction"]))
+```
+Boosting gives the highest test set accuracy. Logistic regression outperforms random forests, but not bagging.

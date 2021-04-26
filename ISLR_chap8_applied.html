@@ -476,7 +476,7 @@ sprintf(&quot;Test MSE: %s&quot;, mean((predict(carseats_forest, test) - test$Sa
 ## Education    1.2049797     103.30595
 ## Urban        0.8486326      19.34474
 ## US           4.3444583      25.30593</code></pre>
-<p><code>Price</code> and <code>ShelveLoc</code> are still the most important variables. Using the default value for <code>mtry</code> (p/3), test MSE is worse than for the bagging model, at 2.70.</p>
+<p><code>Price</code> and <code>ShelveLoc</code> are still the most important variables. Using the default value for <code>mtry</code> (p/3), test MSE is worse than the bagging model, at 2.70.</p>
 </div>
 <div id="exercise-9" class="section level2">
 <h2>Exercise 9</h2>
@@ -803,6 +803,47 @@ table(knn_caravan, test_purchase)</code></pre>
 <pre class="r"><code>mean(knn_caravan[knn_caravan == &quot;Yes&quot;] == test_purchase[knn_caravan == &quot;Yes&quot;])</code></pre>
 <pre><code>## [1] 0.1298701</code></pre>
 <p>KNN does not perform as well as boosting in terms of predicted purchases actually being purchases.</p>
+</div>
+<div id="exercise-12" class="section level2">
+<h2>Exercise 12</h2>
+<p><strong>Apply boosting, bagging, and random forests to a data set of your choice. Be sure to fit the models on a training set and to evaluate their performance on a test set. How accurate are the results compared to simple methods like linear or logistic regression? Which of these approaches yields the best performance?</strong></p>
+<pre class="r"><code>set.seed(1)
+
+# Train/test split
+smarket &lt;- Smarket[, which(names(Smarket) != &quot;Today&quot;)]
+train &lt;- sample(seq_len(nrow(smarket)), 0.7 * nrow(smarket))
+
+# Random forest
+rf_smarket &lt;- randomForest(x = smarket[train, which(names(smarket) != &quot;Direction&quot;)],
+                           y = smarket[train, &quot;Direction&quot;],
+                           xtest = smarket[-train, which(names(smarket) != &quot;Direction&quot;)],
+                           ytest = smarket[-train, &quot;Direction&quot;])
+sprintf(&quot;Random forest accuracy: %s&quot;, mean(rf_smarket$test$predicted == smarket[-train, &quot;Direction&quot;]))</code></pre>
+<pre><code>## [1] &quot;Random forest accuracy: 0.509333333333333&quot;</code></pre>
+<pre class="r"><code># Bagging
+bag_smarket &lt;- randomForest(x = smarket[train, which(names(smarket) != &quot;Direction&quot;)],
+                            y = smarket[train, &quot;Direction&quot;],
+                            xtest = smarket[-train, which(names(smarket) != &quot;Direction&quot;)],
+                            ytest = smarket[-train, &quot;Direction&quot;],
+                            mtry = ncol(smarket) - 1)
+sprintf(&quot;Bagging  accuracy: %s&quot;, mean(bag_smarket$test$predicted == smarket[-train, &quot;Direction&quot;]))</code></pre>
+<pre><code>## [1] &quot;Bagging  accuracy: 0.514666666666667&quot;</code></pre>
+<pre class="r"><code># Boosting
+train_data &lt;- smarket[train,]
+train_data$Direction &lt;- ifelse(train_data$Direction == &quot;Up&quot;, 1, 0)
+boost_smarket &lt;- gbm(Direction ~ ., data = train_data, distribution = &quot;bernoulli&quot;)
+boost_preds &lt;- predict(boost_smarket, smarket[-train,], type = &quot;response&quot;) </code></pre>
+<pre><code>## Using 100 trees...</code></pre>
+<pre class="r"><code>boost_pred_class &lt;- ifelse(boost_preds &gt; 0.5, &quot;Up&quot;, &quot;Down&quot;)
+sprintf(&quot;Boosting accuracy: %s&quot;, mean(boost_pred_class == smarket[-train, &quot;Direction&quot;]))</code></pre>
+<pre><code>## [1] &quot;Boosting accuracy: 0.536&quot;</code></pre>
+<pre class="r"><code># Logistic regression
+logistic_reg &lt;- glm(Direction ~ ., data = smarket[train,], family = &quot;binomial&quot;)
+logistic_preds &lt;- predict(logistic_reg, smarket[-train,], type = &quot;response&quot;)
+logistic_pred_class &lt;- ifelse(logistic_preds &gt; 0.5, &quot;Up&quot;, &quot;Down&quot;)
+sprintf(&quot;Logistic regression accuracy: %s&quot;, mean(logistic_pred_class == smarket[-train, &quot;Direction&quot;]))</code></pre>
+<pre><code>## [1] &quot;Logistic regression accuracy: 0.512&quot;</code></pre>
+<p>Boosting gives the highest test set accuracy. Logistic regression outperforms random forests, but not bagging.</p>
 </div>
 
 
