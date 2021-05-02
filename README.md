@@ -12,6 +12,6 @@ Solutions to exercises:
 [Chapter 6 - conceptual](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap6_conceptual.html)<br>
 [Chapter 6 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap6_applied.html)<br>
 [Chapter 7 - conceptual](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap7_conceptual.html)<br>
-[Chapter 7 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap7_applied.html)
-[Chapter 8 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap8_applied.html)
-[Chapter 9 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap9_applied.html)
+[Chapter 7 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap7_applied.html)<br>
+[Chapter 8 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap8_applied.html)<br>
+[Chapter 9 - applied](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap9_applied.html)<br>
