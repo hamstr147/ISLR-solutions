@@ -22,7 +22,7 @@ boundary <- function(x) {
 }
 x2 <- boundary(x1) + rnorm(100)
 y <- c(rep(-1,50), rep(1,50))
-x2[y == 1] <- x2[y == 1] + 2 # Separate classes by adding a constant to one class
+x2[y == 1] <- x2[y == 1] + 3 # Separate classes by adding a constant to one class
 plot(x1, x2, col = (3 - y))
 
 dat <- data.frame(x1 = x1, x2 = x2, y = as.factor(y))
@@ -32,7 +32,7 @@ test <- dat[-train_idx,]
 
 # Fit SVM and support vector classifier
 lin_svm <- svm(y ~ ., data = train, kernel = "linear", scale = FALSE)
-poly_svm <- svm(y ~ ., data = train, kernel = "radial", degree = 3, scale = FALSE)
+poly_svm <- svm(y ~ ., data = train, kernel = "polynomial", degree = 3, scale = FALSE)
 
 # Training error
 sprintf("SVC train error: %s", mean(predict(lin_svm, train) != train$y))
@@ -47,7 +47,7 @@ plot(lin_svm, test)
 plot(poly_svm, test)
 ```
 
-We can see from the plots and the training error rates that the radial kernel SVM outperforms the support vector classifier on the training data. However, on test data, the linear boundary appears to give better predictions than the SVM with the radial kernel. This suggests that the SVM may be prone to overfitting, even when the true underlying data has a non-linear boundary.
+We can see from the plots and the training error rates that the polynomial kernel SVM outperforms the support vector classifier on the training data. On test data, the SVM also performs better, but the linear boundary gives only slightly worse predictions than the SVM with the polynomial kernel. This suggests that the SVM may be prone to overfitting, even when the true underlying data has a non-linear boundary.
 
 ## Exercise 5
 **We have seen that we can fit an SVM with a non-linear kernel in order to perform classification using a non-linear decision boundary. We will now see that we can also obtain a non-linear decision boundary by performing logistic regression using non-linear transformations of the features.**
