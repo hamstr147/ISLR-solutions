@@ -1,4 +1,4 @@
-# ISLR
+# ISLR (1st edition)
 Solutions to exercises:
 
 [Chapter 2 - conceptual](https://htmlpreview.github.io/?https://github.com/hamstr147/ISLR-notes/blob/master/ISLR_chap2_conceptual.html)<br>
